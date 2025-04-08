@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+    <title>Namaste Point Card - オフライン</title>
+    <style>
+      body {
+        font-family: "Noto Sans JP", sans-serif;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 100vh;
+        background-color: #f8f5f2;
+        color: #333333;
+        text-align: center;
+      }
+      .container {
+        padding: 1rem;
+        max-width: 500px;
+      }
+      .logo {
+        width: 100px;
+        height: 100px;
+        margin-bottom: 1rem;
+      }
+      .title {
+        color: #e46b45;
+        font-size: 1.5rem;
+        margin-bottom: 1rem;
+      }
+      .message {
+        margin-bottom: 2rem;
+      }
+      .language-switch {
+        margin-top: 1rem;
+        color: #666;
+        text-decoration: underline;
+        cursor: pointer;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container" id="ja-content">
+      <div class="logo">🍛</div>
+      <h1 class="title">ナマステポイントカード</h1>
+      <p class="message">
+        インターネット接続がありません。オンラインに戻ると、アプリが自動的に再接続します。
+      </p>
+      <p>
+        一部の機能はオフラインでも使用できますが、ポイントの獲得や交換などの操作にはインターネット接続が必要です。
+      </p>
+      <div class="language-switch" onclick="toggleLanguage()">English</div>
+    </div>
+
+    <div class="container" id="en-content" style="display: none">
+      <div class="logo">🍛</div>
+      <h1 class="title">Namaste Point Card</h1>
+      <p class="message">
+        You are currently offline. The app will automatically reconnect when
+        you're back online.
+      </p>
+      <p>
+        Some features may be available offline, but operations like earning or
+        redeeming points require an internet connection.
+      </p>
+      <div class="language-switch" onclick="toggleLanguage()">日本語</div>
+    </div>
+
+    <script>
+      function toggleLanguage() {
+        const jaContent = document.getElementById("ja-content");
+        const enContent = document.getElementById("en-content");
+
+        if (jaContent.style.display === "none") {
+          jaContent.style.display = "block";
+          enContent.style.display = "none";
+        } else {
+          jaContent.style.display = "none";
+          enContent.style.display = "block";
+        }
+      }
+    </script>
+  </body>
+</html>
