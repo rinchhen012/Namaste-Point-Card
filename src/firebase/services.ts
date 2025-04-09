@@ -975,3 +975,52 @@ export async function updateUserPassword(currentPassword: string, newPassword: s
     }
   }
 }
+
+// Get the next expiration date for the user's points (oldest earned points)
+export async function getNextPointsExpirationInfo(userId: string): Promise<{ expiresAt: Date } | null> {
+  try {
+    const pointsQuery = query(
+      collection(db, 'points_transactions'),
+      where('userId', '==', userId),
+      where('points', '>', 0), // Only consider earning transactions
+      orderBy('createdAt', 'asc'), // Find the oldest first
+      limit(1) // We only need the very oldest one
+    );
+
+    const querySnapshot = await getDocs(pointsQuery);
+
+    if (querySnapshot.empty) {
+      // User has never earned points
+      return null;
+    }
+
+    const oldestTransaction = querySnapshot.docs[0].data();
+    const createdAt = oldestTransaction.createdAt;
+
+    if (!createdAt || typeof createdAt.toDate !== 'function') {
+      console.warn('Oldest transaction missing valid createdAt timestamp');
+      return null;
+    }
+
+    const earnedDate = createdAt.toDate();
+    const expirationDate = new Date(earnedDate);
+    expirationDate.setFullYear(expirationDate.getFullYear() + 1); // Add 1 year
+
+    // Optional: Only return if expiring relatively soon (e.g., within 90 days)
+    const now = new Date();
+    const ninetyDaysFromNow = new Date(now);
+    ninetyDaysFromNow.setDate(now.getDate() + 90);
+
+    if (expirationDate > now && expirationDate <= ninetyDaysFromNow) {
+      return { expiresAt: expirationDate };
+    } else {
+      // Oldest points not expiring soon, or already expired (we don't show past expirations)
+      return null;
+    }
+
+  } catch (error) {
+    console.error("Error fetching next points expiration info:", error);
+    // Don't throw, just return null - this is informational
+    return null;
+  }
+}

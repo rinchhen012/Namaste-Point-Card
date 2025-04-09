@@ -186,7 +186,8 @@
     "newPassword": "新しいパスワード",
     "confirmNewPassword": "新しいパスワード(確認)",
     "passwordUpdateSuccess": "パスワードが正常に更新されました！",
-    "passwordChangeNotApplicable": "ご利用のサインイン方法ではパスワードを変更できません。"
+    "passwordChangeNotApplicable": "ご利用のサインイン方法ではパスワードを変更できません。",
+    "pointsExpiringSoon": "一部のポイントが{{date}}に間もなく失効します"
   },
   "pointsHistory": {
     "history": "ポイント履歴",

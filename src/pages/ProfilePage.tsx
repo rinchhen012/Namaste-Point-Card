@@ -4,10 +4,11 @@ import { useTranslation } from 'react-i18next';
 import Layout from '../components/Layout/Layout';
 import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
-import { logoutUser, getUserPointsHistory, deleteUserAccount, updateUserDisplayName } from '../firebase/services';
+import { logoutUser, getUserPointsHistory, deleteUserAccount, updateUserDisplayName, updateUserPassword, getNextPointsExpirationInfo } from '../firebase/services';
 import { PointsTransaction } from '../types/index';
 import ConfirmationModal from '../components/Admin/ConfirmationModal';
 import ChangePasswordModal from '../components/ChangePasswordModal';
+import { formatDate } from '../utils/dateUtils';
 
 const ProfilePage: React.FC = () => {
   const { t } = useTranslation();
@@ -25,6 +26,7 @@ const ProfilePage: React.FC = () => {
   const [editError, setEditError] = useState<string | null>(null);
   const nameInputRef = useRef<HTMLInputElement>(null);
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
+  const [nextExpiration, setNextExpiration] = useState<Date | null>(null);
 
   useEffect(() => {
     if (!currentUser) {
@@ -36,20 +38,24 @@ const ProfilePage: React.FC = () => {
       setNewName(userProfile.displayName);
     }
 
-    const fetchPointsHistory = async () => {
+    const fetchPointsData = async () => {
       setLoading(true);
       try {
-        const history = await getUserPointsHistory(currentUser.uid);
+        const [history, expirationInfo] = await Promise.all([
+          getUserPointsHistory(currentUser.uid),
+          getNextPointsExpirationInfo(currentUser.uid)
+        ]);
         setPointsHistory(history);
+        setNextExpiration(expirationInfo ? expirationInfo.expiresAt : null);
       } catch (err) {
-        console.error('Error fetching points history:', err);
+        console.error('Error fetching points data:', err);
         setError(t('common.error'));
       } finally {
         setLoading(false);
       }
     };
 
-    fetchPointsHistory();
+    fetchPointsData();
   }, [currentUser, navigate, t, userProfile]);
 
   useEffect(() => {
@@ -262,10 +268,16 @@ const ProfilePage: React.FC = () => {
             </div>
           </div>
 
-          <div className="flex items-baseline mb-2">
+          <div className="flex items-baseline mb-1">
             <span className="text-2xl font-bold text-primary">{userProfile.points}</span>
             <span className="ml-2 text-sm text-gray-500">{t('common.points')}</span>
           </div>
+
+          {nextExpiration && (
+            <div className="mt-2 p-3 bg-amber-50 border border-amber-200 rounded-md text-xs text-amber-800">
+              <p>{t('profile.pointsExpiringSoon', { date: formatDate(nextExpiration, language) })}</p>
+            </div>
+          )}
         </div>
 
         {/* Settings */}

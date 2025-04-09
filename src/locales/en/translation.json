@@ -191,7 +191,8 @@
     "newPassword": "New Password",
     "confirmNewPassword": "Confirm New Password",
     "passwordUpdateSuccess": "Password updated successfully!",
-    "passwordChangeNotApplicable": "Password change is not available for your sign-in method."
+    "passwordChangeNotApplicable": "Password change is not available for your sign-in method.",
+    "pointsExpiringSoon": "Some points are expiring soon on {{date}}"
   },
   "pointsHistory": {
     "history": "Points History",
