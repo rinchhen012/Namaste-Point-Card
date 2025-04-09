@@ -23,7 +23,8 @@ import {
   addDoc,
   Timestamp,
   increment,
-  limit
+  limit,
+  deleteDoc
 } from 'firebase/firestore';
 import { httpsCallable } from 'firebase/functions';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
@@ -889,6 +890,24 @@ export const getUserRedemptionHistory = async (userId: string): Promise<Redempti
     return redemptions;
   } catch (error) {
     console.error('Error getting user redemption history:', error);
+    throw error;
+  }
+};
+
+// Delete the user's account and all associated data
+export const deleteUserAccount = async () => {
+  const user = auth.currentUser;
+  if (!user) throw new Error('No authenticated user found');
+
+  try {
+    // Delete user data from Firestore
+    const userRef = doc(db, 'users', user.uid);
+
+    // Delete user authentication
+    await deleteDoc(userRef);
+    return user.delete();
+  } catch (error) {
+    console.error('Error deleting user account:', error);
     throw error;
   }
 };

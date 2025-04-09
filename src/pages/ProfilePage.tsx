@@ -4,8 +4,9 @@ import { useTranslation } from 'react-i18next';
 import Layout from '../components/Layout/Layout';
 import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
-import { logoutUser, getUserPointsHistory } from '../firebase/services';
+import { logoutUser, getUserPointsHistory, deleteUserAccount } from '../firebase/services';
 import { PointsTransaction } from '../types/index';
+import ConfirmationModal from '../components/Admin/ConfirmationModal';
 
 const ProfilePage: React.FC = () => {
   const { t } = useTranslation();
@@ -16,6 +17,8 @@ const ProfilePage: React.FC = () => {
   const [pointsHistory, setPointsHistory] = useState<PointsTransaction[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     if (!currentUser) {
@@ -46,6 +49,20 @@ const ProfilePage: React.FC = () => {
     } catch (err) {
       console.error('Logout error:', err);
       setError(t('common.error'));
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    setIsDeleting(true);
+    try {
+      await deleteUserAccount();
+      // After successful deletion, redirect to login page
+      navigate('/login');
+    } catch (err) {
+      console.error('Error deleting account:', err);
+      setError(t('common.error'));
+      setIsDeleting(false);
+      setIsDeleteModalOpen(false);
     }
   };
 
@@ -180,19 +197,48 @@ const ProfilePage: React.FC = () => {
           </button>
         </div>
 
-        {/* Logout Button */}
-        <button
-          onClick={handleLogout}
-          className="w-full py-3 rounded-lg border border-red-300 text-red-600 font-medium mb-4"
-        >
-          {t('auth.logout')}
-        </button>
+        {/* Buttons */}
+        <div className="space-y-4">
+          {/* Logout Button */}
+          <button
+            onClick={handleLogout}
+            className="w-full py-3 rounded-lg border border-red-300 text-red-600 font-medium"
+          >
+            {t('auth.logout')}
+          </button>
+
+          {/* Delete Account Button */}
+          <button
+            onClick={() => setIsDeleteModalOpen(true)}
+            className="w-full py-3 rounded-lg bg-red-600 text-white font-medium"
+          >
+            {t('auth.deleteAccount')}
+          </button>
+        </div>
 
         {/* App Version */}
-        <p className="text-center text-xs text-gray-500">
+        <p className="text-center text-xs text-gray-500 mt-4">
           {t('profile.version')} 1.0.0
         </p>
       </div>
+
+      {/* Delete Account Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => setIsDeleteModalOpen(false)}
+        onConfirm={handleDeleteAccount}
+        title={t('auth.deleteAccountConfirmTitle')}
+        message={
+          <div>
+            <p>{t('auth.deleteAccountConfirmMessage')}</p>
+            <p className="mt-2 font-bold text-red-600">{t('auth.deleteAccountWarning')}</p>
+          </div>
+        }
+        confirmButtonText={t('common.delete')}
+        cancelButtonText={t('common.cancel')}
+        confirmButtonColor="red"
+        isLoading={isDeleting}
+      />
     </Layout>
   );
 };
