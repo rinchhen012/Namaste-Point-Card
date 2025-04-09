@@ -37,7 +37,7 @@ const RedemptionTimer: React.FC<RedemptionTimerProps> = ({ expiryDate }) => {
   }, [expiryDate, t]);
 
   return (
-    <span className="text-xs font-medium text-primary">
+    <span className="text-xs font-medium text-primary whitespace-nowrap">
       {countdown}
     </span>
   );
@@ -65,11 +65,8 @@ const CouponsPage: React.FC = () => {
       setError(null);
 
       try {
-        // Fetch available coupons
         const couponsData = await getAvailableRewards();
         setCoupons(couponsData as Coupon[]);
-
-        // Fetch user's active redemptions
         const redemptionsData = await getUserRedemptions(currentUser.uid);
         setActiveRedemptions(redemptionsData as Redemption[]);
       } catch (err) {
@@ -88,18 +85,11 @@ const CouponsPage: React.FC = () => {
   };
 
   const handleRedeemCoupon = (coupon: Coupon) => {
-    console.log('[CouponsPage] handleRedeemCoupon initiating for Coupon ID:', coupon.id);
     navigate(`/redemption/initiate`, { state: { reward: coupon } });
   };
 
   const handleViewRedemption = (redemption: Redemption) => {
-    console.log('[CouponsPage] handleViewRedemption received object:', redemption);
-    console.log('[CouponsPage] handleViewRedemption navigating with ID:', redemption.id);
-    const targetUrl = `/redemption/${redemption.id}`;
-    console.log('[CouponsPage] Navigating to URL:', targetUrl);
-    navigate(targetUrl, {
-      state: { existingRedemption: redemption }
-    });
+    navigate(`/redemption/${redemption.id}`, { state: { existingRedemption: redemption } });
   };
 
   if (!currentUser || !userProfile) {
@@ -108,22 +98,13 @@ const CouponsPage: React.FC = () => {
 
   return (
     <Layout title={t('rewards.coupons')}>
-      <div className="p-4 space-y-6">
+      <div className="w-full max-w-3xl mx-auto px-4 py-6 space-y-8 overflow-hidden">
         {/* Current Points Display Section */}
-        <div>
-          <div className="bg-white rounded-lg shadow-md p-5 mb-0 w-full">
-            <div className="flex justify-between items-center mb-1">
-              <p className="text-sm font-medium text-gray-600">{t('home.currentPoints')}</p>
-            </div>
-            <div className="flex items-baseline mt-1">
-              <span className="text-3xl font-bold text-primary">{userProfile.points}</span>
-              <span className="ml-2 text-sm text-gray-500">{t('common.points')}</span>
-            </div>
-          </div>
-          {/* View History Button */}
-          <div className="flex justify-end mt-3">
+        <div className="bg-gradient-to-r from-primary to-primary-dark text-white rounded-xl shadow-lg p-5">
+          <div className="flex justify-between items-center mb-1">
+            <p className="text-sm font-medium opacity-90">{t('home.currentPoints')}</p>
             <button
-              className="text-xs text-primary font-medium hover:underline flex items-center"
+              className="text-xs font-medium hover:underline opacity-90 flex items-center"
               onClick={() => navigate('/redemption-history')}
             >
               <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -132,118 +113,107 @@ const CouponsPage: React.FC = () => {
               {t('rewards.viewHistory')}
             </button>
           </div>
+          <div className="flex items-baseline mt-1">
+            <span className="text-4xl font-bold">{userProfile.points}</span>
+            <span className="ml-2 text-base font-medium opacity-90">{t('common.points')}</span>
+          </div>
         </div>
 
         {/* Active Redemptions */}
-        {activeRedemptions.length > 0 && (
-          <div className="mb-0">
-            <h2 className="text-xl font-semibold mb-4">{t('rewards.activeRedemptions')}</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        {loading ? null : activeRedemptions.length > 0 && (
+          <section>
+            <h2 className="text-xl font-semibold mb-4 text-gray-800">{t('rewards.activeRedemptions')}</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {activeRedemptions.map((redemption) => {
-                // Convert Firestore Timestamp to Date object if necessary
-                const expiryDate = typeof redemption.expiresAt.toDate === 'function'
-                                   ? redemption.expiresAt.toDate()
-                                   : redemption.expiresAt;
-
-                console.log('[CouponsPage] Rendering active redemption card for ID:', redemption.id);
+                const expiryDate = typeof redemption.expiresAt.toDate === 'function' ? redemption.expiresAt.toDate() : redemption.expiresAt;
                 return (
                   <div
                     key={redemption.id}
                     onClick={() => handleViewRedemption(redemption)}
-                    className="bg-white rounded-lg shadow-md p-5 cursor-pointer flex flex-col justify-between"
+                    className="bg-white rounded-lg shadow p-4 cursor-pointer flex flex-col justify-between transition hover:shadow-md h-full"
                   >
-                    <div>
-                      <h3 className="font-semibold text-base mb-1">{redemption.rewardName}</h3>
-                      <p className="text-sm text-gray-600 mb-3 line-clamp-2">{redemption.rewardDescription}</p>
+                    <div className="flex-grow mb-2 overflow-hidden">
+                      <h3 className="font-semibold text-gray-800 truncate">{redemption.rewardName}</h3>
+                      <p className="text-sm text-gray-500 line-clamp-2 break-words mt-1">{redemption.rewardDescription}</p>
                     </div>
-                    <div className="flex justify-between items-center mt-2">
+                    <div className="flex items-center justify-between flex-shrink-0 space-x-3 mt-auto">
                       <div className="bg-green-100 text-green-800 text-xs font-medium px-2.5 py-1 rounded-full">
                         {t('rewards.active')}
                       </div>
-                      {/* Use the RedemptionTimer component here */}
                       {expiryDate instanceof Date ? (
                         <RedemptionTimer expiryDate={expiryDate} />
                       ) : (
-                        <span className="text-xs text-red-500">Invalid Date</span> // Fallback
+                        <span className="text-xs text-red-500">{t('common.invalidDate')}</span>
                       )}
                     </div>
                   </div>
                 );
               })}
             </div>
-          </div>
+          </section>
         )}
 
         {/* Available Coupons */}
-        <div>
-          <h2 className="text-xl font-semibold mb-4">{t('rewards.availableRewards')}</h2>
+        <section>
+          <h2 className="text-xl font-semibold mb-4 text-gray-800">{t('rewards.availableRewards')}</h2>
 
           {loading ? (
-            <div className="flex justify-center py-6">
-              <div className="animate-spin rounded-full h-8 w-8 border-4 border-primary border-t-transparent"></div>
+            <div className="flex justify-center py-10">
+              <div className="animate-spin rounded-full h-10 w-10 border-4 border-primary border-t-transparent"></div>
             </div>
           ) : error ? (
-            <div className="bg-red-50 text-red-700 p-4 rounded-md">
+            <div className="bg-red-50 text-red-700 p-4 rounded-lg shadow">
               {error}
-              <button
-                onClick={() => window.location.reload()}
-                className="block mt-2 text-sm underline"
-              >
+              <button onClick={() => window.location.reload()} className="block mt-2 text-sm font-medium underline">
                 {t('common.retry')}
               </button>
             </div>
           ) : coupons.length === 0 ? (
-            <div className="bg-gray-50 p-6 rounded-md text-center">
-              <p className="text-gray-600">{t('rewards.noRewards')}</p>
+            <div className="bg-gray-50 p-6 rounded-lg text-center shadow-inner">
+              <p className="text-gray-600 italic">{t('rewards.noRewards')}</p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {coupons.map((coupon) => (
-                <div key={coupon.id} className="bg-white rounded-lg shadow-md overflow-hidden flex flex-col">
-                  {/* Image Section */}
-                  {coupon.imageUrl && (
-                    <div className="w-full h-52 bg-gray-200 flex-shrink-0">
-                      <img
-                        src={coupon.imageUrl}
-                        alt={coupon.name && userProfile?.language ? coupon.name[userProfile.language] : coupon.name}
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                  )}
+                <div key={coupon.id} className="bg-white rounded-lg shadow p-4 w-full box-border overflow-hidden flex flex-col justify-between h-full">
+                  <div className="mb-3 min-w-0 flex-grow">
+                    <h3 className="font-semibold text-lg text-gray-800 mb-1 break-words line-clamp-2 overflow-hidden">
+                      {typeof coupon.name === 'string'
+                        ? coupon.name
+                        : (userProfile?.language && coupon.name?.[userProfile.language])
+                          ? coupon.name[userProfile.language]
+                          : ''}
+                    </h3>
+                    <p className="text-sm text-gray-600 line-clamp-3 break-words overflow-hidden">
+                      {typeof coupon.description === 'string'
+                        ? coupon.description
+                        : (userProfile?.language && coupon.description?.[userProfile.language])
+                          ? coupon.description[userProfile.language]
+                          : ''}
+                    </p>
+                  </div>
 
-                  {/* Content Section */}
-                  <div className="p-5 flex-grow flex flex-col">
-                    <div className="flex-grow">
-                      <h3 className="font-semibold text-lg mb-2">
-                        {coupon.name && userProfile?.language ? coupon.name[userProfile.language] : coupon.name}
-                      </h3>
-                      <p className="text-sm text-gray-600 mb-4 line-clamp-3">
-                        {coupon.description && userProfile?.language ? coupon.description[userProfile.language] : coupon.description}
-                      </p>
-                    </div>
-                    {/* Action Section */}
-                    <div className="pt-4 border-t border-gray-100 flex justify-between items-center mt-auto">
-                      <p className="text-xl font-bold text-primary mr-3">
-                        {coupon.pointsCost} <span className="text-sm font-medium text-gray-600">pts</span>
-                      </p>
-                      <button
-                        onClick={() => handleRedeemCoupon(coupon)}
-                        disabled={!canRedeemCoupon(coupon.pointsCost)}
-                        className={`px-5 py-2 rounded-md text-sm font-medium transition duration-150 ${
-                          canRedeemCoupon(coupon.pointsCost)
-                            ? 'bg-primary text-white hover:bg-primary-dark shadow-sm'
-                            : 'bg-gray-200 text-gray-500 cursor-not-allowed'
-                        }`}
-                      >
-                        {t('rewards.redeem')}
-                      </button>
-                    </div>
+                  <div className="flex justify-between items-center mt-auto pt-3 border-t border-gray-100 gap-4 flex-shrink-0">
+                    <p className="text-lg font-bold text-primary overflow-hidden text-ellipsis whitespace-nowrap flex-shrink mr-2">
+                      {coupon.pointsCost} <span className="text-xs font-medium text-gray-600">{t('common.pts')}</span>
+                    </p>
+                    <button
+                      onClick={() => handleRedeemCoupon(coupon)}
+                      disabled={!canRedeemCoupon(coupon.pointsCost)}
+                      className={`px-4 py-1.5 rounded-md text-sm font-semibold transition duration-150 flex-shrink-0 ${
+                        canRedeemCoupon(coupon.pointsCost)
+                          ? 'bg-primary text-white hover:bg-primary-dark shadow-sm'
+                          : 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                      }`}
+                    >
+                      {t('rewards.redeem')}
+                    </button>
                   </div>
                 </div>
               ))}
             </div>
           )}
-        </div>
+        </section>
       </div>
     </Layout>
   );
