@@ -228,156 +228,136 @@ const RedemptionPage: React.FC = () => {
   }
 
   // Step 1: Confirmation screen for redeeming
-  if (reward && !redemption && !confirming) {
+  if (reward && !redemption && confirming) {
     return (
       <Layout
         title={t('rewards.redeemReward')}
         showBackButton
         onBack={() => navigate('/coupons')}
       >
-        <div className="p-4">
-          <div className="bg-white rounded-lg shadow-md p-6 my-4">
-            <h2 className="text-xl font-medium mb-4">
-              {reward.name[userProfile.language]}
+        <div className="w-full max-w-3xl mx-auto px-4 py-6 space-y-8 overflow-hidden">
+          <div className="bg-white rounded-lg shadow-md p-6 max-w-sm mx-auto overflow-hidden">
+            <h2 className="text-xl font-medium mb-4 text-center">
+              {t('rewards.confirmRedeem', { reward: reward.name[userProfile.language], points: reward.pointsCost })}
             </h2>
-            <p className="text-gray-600 mb-6">
+            <p className="text-gray-600 text-center mb-6">
               {reward.description[userProfile.language]}
             </p>
 
-            <div className="border-t border-gray-100 pt-4 mb-6">
-              <div className="flex justify-between">
-                <span className="text-gray-600">{t('common.points')}:</span>
-                <span className="font-medium text-primary">{reward.pointsCost}</span>
-              </div>
-              <div className="flex justify-between mt-2">
-                <span className="text-gray-600">{t('home.currentPoints')}:</span>
-                <span className="font-medium">{userProfile.points}</span>
-              </div>
-              <div className="flex justify-between mt-2">
-                <span className="text-gray-600">{t('rewards.remainingPoints')}:</span>
-                <span className="font-medium">{userProfile.points - reward.pointsCost}</span>
-              </div>
+            <div className="bg-yellow-50 border border-yellow-200 rounded-md p-4 mb-6">
+              <p className="text-sm text-yellow-700">{t('rewards.redemptionWarning')}</p>
             </div>
 
-            {error && (
-              <div className="bg-red-50 text-red-700 p-3 rounded-md mb-4">
-                {error}
-              </div>
-            )}
-
-            <div className="flex space-x-3">
-              <button
-                onClick={() => navigate('/coupons')}
-                className="btn-secondary w-1/2"
-              >
-                {t('common.cancel')}
-              </button>
-              <button
-                onClick={() => setConfirming(true)}
-                className="btn-primary w-1/2"
-              >
-                {t('common.confirm')}
-              </button>
-            </div>
-          </div>
-        </div>
-      </Layout>
-    );
-  }
-
-  // Step 2: Final confirmation before redeeming
-  if (reward && !redemption && confirming) {
-    return (
-      <Layout
-        title={t('rewards.redeemReward')}
-        showBackButton
-        onBack={() => setConfirming(false)}
-      >
-        <div className="p-4">
-          <div className="bg-white rounded-lg shadow-md p-6 my-4 text-center">
-            <p className="mb-6">
-              {t('rewards.confirmRedeem', {
-                reward: reward.name[userProfile.language],
-                points: reward.pointsCost
-              })}
-            </p>
-
-            <div className="text-red-600 text-sm mb-6 bg-red-50 p-3 rounded-md">
-              {t('rewards.redemptionWarning')}
-            </div>
-
-            {error && (
-              <div className="bg-red-50 text-red-700 p-3 rounded-md mb-4">
-                {error}
-              </div>
-            )}
-
-            <div className="flex space-x-3">
-              <button
-                onClick={() => setConfirming(false)}
-                disabled={loading}
-                className="btn-secondary w-1/2"
-              >
-                {t('common.cancel')}
-              </button>
+            <div className="space-y-3">
               <button
                 onClick={handleConfirmRedeem}
                 disabled={loading}
-                className="btn-primary w-1/2"
+                className={`w-full py-3 rounded-lg text-white font-semibold transition duration-150 flex items-center justify-center ${loading ? 'bg-gray-400 cursor-not-allowed' : 'bg-primary hover:bg-primary-dark'}`}
               >
                 {loading ? (
-                  <span className="flex items-center justify-center">
-                    <span className="inline-block animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2"></span>
-                    {t('common.loading')}
-                  </span>
-                ) : (
-                  t('rewards.redeem')
-                )}
+                  <svg className="animate-spin -ml-1 mr-2 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                ) : null}
+                {loading ? t('common.processing') : t('rewards.redeem')}
+              </button>
+              <button
+                onClick={() => navigate('/coupons')}
+                disabled={loading}
+                className="w-full py-3 rounded-lg border border-gray-300 text-gray-700 font-medium hover:bg-gray-50 transition duration-150"
+              >
+                {t('common.cancel')}
               </button>
             </div>
+            {error && <p className="text-red-600 text-center mt-4">{error}</p>}
           </div>
         </div>
       </Layout>
     );
   }
 
-  // Step 3: Redemption result screen - simplified for all reward types
+  // Step 2: Active Redemption display
   if (redemption) {
+    const expiryDate = 'expiresAt' in redemption && typeof redemption.expiresAt.toDate === 'function'
+      ? redemption.expiresAt.toDate()
+      : 'expiresAt' in redemption && redemption.expiresAt instanceof Date
+        ? redemption.expiresAt
+        : null;
+
+    const isExpired = expiryDate ? expiryDate.getTime() <= Date.now() : true;
+    const isUsed = 'used' in redemption && redemption.used;
+
     return (
       <Layout
         title={t('rewards.redemption')}
         showBackButton
-        onBack={() => navigate('/rewards')}
+        onBack={() => navigate('/coupons')}
       >
-        <div className="p-4">
-          <div className="bg-white rounded-lg shadow-md p-6 my-4">
-            <div className="text-center">
-              <h2 className="text-xl font-medium mb-2">
-                {'rewardName' in redemption ? redemption.rewardName : reward?.name[userProfile.language]}
-              </h2>
-              <p className="text-gray-600 mb-6">
-                {'rewardDescription' in redemption ? redemption.rewardDescription : reward?.description[userProfile.language]}
+        <div className="w-full max-w-sm mx-auto px-4 py-6 overflow-hidden">
+          <div className="bg-white rounded-lg shadow-md p-6 max-w-xs mx-auto overflow-hidden w-full">
+            <h2 className="text-xl font-semibold mb-2 text-gray-800 break-words overflow-hidden">
+              {redemption.rewardName}
+            </h2>
+            <p className="text-sm text-gray-600 mb-4 break-words overflow-hidden">
+              {redemption.rewardDescription}
+            </p>
+
+            <div className="bg-blue-50 border border-blue-200 rounded-md p-4 mb-6 text-center">
+              <p className="text-sm text-blue-700 font-medium mb-2">
+                {t('rewards.showToStaffInstructions')}
               </p>
-
-              <div className="p-4 bg-gray-50 rounded-lg mb-4">
-                {/* Countdown timer */}
-                <div className="text-2xl font-bold text-primary my-3">
-                  {countdown}
+              {expiryDate && !isExpired && !isUsed ? (
+                <div className="flex justify-center items-baseline">
+                  <span className="text-2xl font-bold text-primary mr-1">{countdown}</span>
+                  <span className="text-xs text-gray-600">{t('rewards.validUntilTime')}</span>
                 </div>
+              ) : isUsed ? (
+                <p className="text-lg font-bold text-gray-500">{t('rewards.alreadyUsed')}</p>
+              ) : (
+                <p className="text-lg font-bold text-red-600">{t('rewards.expired')}</p>
+              )}
+            </div>
 
-                <p className="text-sm text-gray-600">
-                  {t('rewards.showToStaffInstructions')}
-                </p>
-              </div>
+            <div className="grid grid-cols-[auto,1fr] gap-x-4 gap-y-2 mb-6 text-sm min-w-0">
+              <span className="text-gray-600 whitespace-nowrap">{t('rewards.redeemed')}:</span>
+              <span className="font-medium text-gray-800 text-right overflow-hidden text-ellipsis whitespace-nowrap min-w-0">
+                {'createdAt' in redemption && formatDateTime(redemption.createdAt, userProfile.language)}
+              </span>
 
+              <span className="text-gray-600 whitespace-nowrap">{t('rewards.expires')}:</span>
+              <span className="font-medium text-gray-800 text-right overflow-hidden text-ellipsis whitespace-nowrap min-w-0">
+                {expiryDate ? formatDateTime(expiryDate, userProfile.language) : '-'}
+              </span>
+
+              <span className="text-gray-600 whitespace-nowrap">{t('common.points')}:</span>
+              <span className="font-medium text-gray-800 text-right overflow-hidden text-ellipsis whitespace-nowrap min-w-0">
+                {redemption.pointsCost}
+              </span>
+
+              <span className="text-gray-600 whitespace-nowrap">{t('rewards.code')}:</span>
+              <span className="font-medium text-gray-800 font-mono break-all text-right overflow-hidden min-w-0">
+                {redemption.code}
+              </span>
+            </div>
+
+            {!isUsed && !isExpired && (
               <button
                 onClick={handleMarkAsUsed}
                 disabled={loading}
-                className="btn-primary w-full mt-4"
+                className={`w-full py-3 rounded-lg text-white font-semibold transition duration-150 flex items-center justify-center ${loading ? 'bg-gray-400 cursor-not-allowed' : 'bg-orange-500 hover:bg-orange-600'}`}
               >
-                {loading ? t('common.loading') : t('rewards.markAsUsed')}
+                {loading ? (
+                  <svg className="animate-spin -ml-1 mr-2 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                ) : null}
+                {loading ? t('common.processing') : t('rewards.markAsUsed')}
               </button>
-            </div>
+            )}
+
+            {error && <p className="text-red-600 text-center mt-4">{error}</p>}
           </div>
         </div>
       </Layout>

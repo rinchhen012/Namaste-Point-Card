@@ -14,7 +14,10 @@
     "next": "次へ",
     "points": "ポイント",
     "close": "閉じる",
-    "delete": "削除"
+    "delete": "削除",
+    "pts": "pts",
+    "processing": "処理中...",
+    "invalidDate": "無効な日付"
   },
   "auth": {
     "login": "ログイン",
@@ -155,8 +158,12 @@
     "active": "有効",
     "redeemed": "交換日",
     "expires": "有効期限",
-    "noRewards": "利用可能なクーポンはありません",
-    "noRedemptions": "アクティブなクーポンはありません",
+    "code": "コード",
+    "alreadyUsed": "使用済み",
+    "validUntilTime": "有効期限まで",
+    "errorNoActiveRedemption": "有効な交換が見つかりません。",
+    "noRewards": "現在、利用可能なクーポンはありません",
+    "noRedemptions": "有効なクーポンはありません",
     "redemptionComplete": "交換完了！",
     "errorProcessingRedemption": "交換処理中にエラーが発生しました"
   },
