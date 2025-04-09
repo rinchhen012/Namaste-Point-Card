@@ -206,5 +206,12 @@
     "cameraDenied": "カメラへのアクセスが拒否されました",
     "technicalIssue": "技術的な問題が発生しました",
     "sessionExpired": "セッションの有効期限が切れました。再度ログインしてください"
+  },
+  "nav": {
+    "home": "ホーム",
+    "coupons": "クーポン",
+    "scan": "スキャン",
+    "info": "情報",
+    "profile": "プロフィール"
   }
 }

@@ -208,5 +208,12 @@
     "cameraDenied": "Camera access denied",
     "technicalIssue": "Technical issue occurred",
     "sessionExpired": "Session expired, please login again"
+  },
+  "nav": {
+    "home": "Home",
+    "coupons": "Coupons",
+    "scan": "Scan",
+    "info": "Info",
+    "profile": "Profile"
   }
 }
