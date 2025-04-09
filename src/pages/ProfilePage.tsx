@@ -1,17 +1,17 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import Layout from '../components/Layout/Layout';
 import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
-import { logoutUser, getUserPointsHistory, deleteUserAccount } from '../firebase/services';
+import { logoutUser, getUserPointsHistory, deleteUserAccount, updateUserDisplayName } from '../firebase/services';
 import { PointsTransaction } from '../types/index';
 import ConfirmationModal from '../components/Admin/ConfirmationModal';
 
 const ProfilePage: React.FC = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { currentUser, userProfile } = useAuth();
+  const { currentUser, userProfile, setUserProfile } = useAuth();
   const { language, changeLanguage } = useLanguage();
 
   const [pointsHistory, setPointsHistory] = useState<PointsTransaction[]>([]);
@@ -19,11 +19,19 @@ const ProfilePage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [newName, setNewName] = useState(userProfile?.displayName || '');
+  const [editError, setEditError] = useState<string | null>(null);
+  const nameInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!currentUser) {
       navigate('/login');
       return;
+    }
+
+    if (userProfile) {
+      setNewName(userProfile.displayName);
     }
 
     const fetchPointsHistory = async () => {
@@ -40,7 +48,14 @@ const ProfilePage: React.FC = () => {
     };
 
     fetchPointsHistory();
-  }, [currentUser, navigate, t]);
+  }, [currentUser, navigate, t, userProfile]);
+
+  useEffect(() => {
+    if (isEditingName && nameInputRef.current) {
+      nameInputRef.current.focus();
+      nameInputRef.current.select();
+    }
+  }, [isEditingName]);
 
   const handleLogout = async () => {
     try {
@@ -56,7 +71,6 @@ const ProfilePage: React.FC = () => {
     setIsDeleting(true);
     try {
       await deleteUserAccount();
-      // After successful deletion, redirect to login page
       navigate('/login');
     } catch (err) {
       console.error('Error deleting account:', err);
@@ -69,6 +83,42 @@ const ProfilePage: React.FC = () => {
   const toggleLanguage = () => {
     const newLanguage = language === 'en' ? 'ja' : 'en';
     changeLanguage(newLanguage);
+  };
+
+  const handleEditName = () => {
+    setEditError(null);
+    setNewName(userProfile?.displayName || '');
+    setIsEditingName(true);
+  };
+
+  const handleCancelEditName = () => {
+    setIsEditingName(false);
+    setEditError(null);
+  };
+
+  const handleSaveName = async () => {
+    if (!currentUser || !userProfile) return;
+    if (!newName.trim()) {
+      setEditError(t('auth.errors.nameRequired'));
+      return;
+    }
+    if (newName === userProfile.displayName) {
+      setIsEditingName(false);
+      return;
+    }
+
+    setLoading(true);
+    setEditError(null);
+    try {
+      await updateUserDisplayName(currentUser.uid, newName.trim());
+      setUserProfile({ ...userProfile, displayName: newName.trim() });
+      setIsEditingName(false);
+    } catch (err: any) {
+      console.error('Error saving display name:', err);
+      setEditError(err.message || t('common.error'));
+    } finally {
+      setLoading(false);
+    }
   };
 
   if (!currentUser || !userProfile) {
@@ -140,16 +190,53 @@ const ProfilePage: React.FC = () => {
 
   return (
     <Layout title={t('profile.myProfile')}>
-      <div className="p-4">
+      <div className="p-4 max-w-md mx-auto">
         {/* User Info */}
         <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-          <div className="flex items-center mb-4">
-            <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center text-2xl font-bold text-gray-600">
+          <div className="flex items-start mb-4">
+            <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center text-2xl font-bold text-gray-600 mr-4 flex-shrink-0">
               {userProfile.displayName.charAt(0)}
             </div>
-            <div className="ml-4">
-              <h2 className="text-xl font-medium">{userProfile.displayName}</h2>
-              <p className="text-gray-600">{userProfile.email}</p>
+            <div className="flex-grow min-w-0">
+              {isEditingName ? (
+                <div className="mb-2">
+                  <input
+                    ref={nameInputRef}
+                    type="text"
+                    value={newName}
+                    onChange={(e) => setNewName(e.target.value)}
+                    className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                    maxLength={50}
+                  />
+                  {editError && <p className="text-red-600 text-xs mt-1">{editError}</p>}
+                  <div className="flex space-x-2 mt-2">
+                    <button
+                      onClick={handleSaveName}
+                      disabled={loading}
+                      className="px-3 py-1 text-sm bg-primary text-white rounded hover:bg-primary-dark disabled:opacity-50"
+                    >
+                      {loading ? t('common.saving') : t('common.save')}
+                    </button>
+                    <button
+                      onClick={handleCancelEditName}
+                      disabled={loading}
+                      className="px-3 py-1 text-sm bg-gray-200 text-gray-700 rounded hover:bg-gray-300 disabled:opacity-50"
+                    >
+                      {t('common.cancel')}
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex items-center">
+                  <h2 className="text-xl font-medium truncate mr-2">{userProfile.displayName}</h2>
+                  <button onClick={handleEditName} className="text-primary hover:text-primary-dark">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                      <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+                    </svg>
+                  </button>
+                </div>
+              )}
+              <p className="text-gray-600 break-words">{userProfile.email}</p>
             </div>
           </div>
 

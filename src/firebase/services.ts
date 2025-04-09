@@ -227,6 +227,32 @@ export async function updateUserProfile(userId: string, data: Partial<UserProfil
   await updateDoc(docRef, data);
 }
 
+// Update user display name in both Auth and Firestore
+export async function updateUserDisplayName(userId: string, newDisplayName: string): Promise<void> {
+  const user = auth.currentUser;
+  if (!user || user.uid !== userId) {
+    throw new Error("User not authenticated or mismatch.");
+  }
+
+  if (!newDisplayName.trim()) {
+    throw new Error("Display name cannot be empty.");
+  }
+
+  try {
+    // Update Firebase Auth profile
+    await updateProfile(user, { displayName: newDisplayName });
+
+    // Update Firestore document
+    const userDocRef = doc(db, 'users', userId);
+    await updateDoc(userDocRef, { displayName: newDisplayName });
+
+  } catch (error) {
+    console.error("Error updating display name:", error);
+    // Rethrow the error for the calling component to handle
+    throw error;
+  }
+}
+
 export const setUserLanguage = async (userId: string, language: 'en' | 'ja') => {
   const userRef = doc(db, 'users', userId);
   return updateDoc(userRef, { language });
