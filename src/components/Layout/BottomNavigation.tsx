@@ -1,10 +1,30 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { useAuth } from '../../contexts/AuthContext';
+import { getAvailableRewards } from '../../firebase/services';
+import { Coupon } from '../../types';
 
 const BottomNavigation: React.FC = () => {
   const { t } = useTranslation();
   const location = useLocation();
+  const { currentUser } = useAuth();
+  const [availableCoupons, setAvailableCoupons] = useState<number>(0);
+
+  useEffect(() => {
+    const fetchAvailableCoupons = async () => {
+      if (!currentUser) return;
+
+      try {
+        const coupons = await getAvailableRewards();
+        setAvailableCoupons(coupons.length);
+      } catch (error) {
+        console.error('Error fetching available coupons:', error);
+      }
+    };
+
+    fetchAvailableCoupons();
+  }, [currentUser]);
 
   const isActive = (path: string) => {
     return location.pathname === path;
@@ -24,14 +44,20 @@ const BottomNavigation: React.FC = () => {
 
       <Link
         to="/coupons"
-        className={`flex flex-col items-center justify-center w-full h-full ${
+        className={`flex flex-col items-center justify-center w-full h-full relative ${
           isActive('/coupons') || isActive('/rewards') ? 'text-primary' : 'text-gray-500'
         }`}
         aria-label={t('rewards.availableRewards')}
       >
         <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v13m0-13V6a2 2 0 112 2h-2zm0 0V5.5A2.5 2.5 0 109.5 8H12zm-7 4h14M5 12a2 2 0 110-4h14a2 2 0 110 4M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7" />
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z" />
         </svg>
+
+        {availableCoupons > 0 && (
+          <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
+            {availableCoupons}
+          </span>
+        )}
       </Link>
 
       <Link
