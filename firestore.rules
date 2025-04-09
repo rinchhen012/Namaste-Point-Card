@@ -18,22 +18,56 @@ service cloud.firestore {
     }
 
     function isValidUserData(userData) {
-      let isValid = userData.keys().hasOnly(['uid', 'email', 'displayName', 'points',
-                                         'phoneNumber', 'createdAt', 'lastVisit',
-                                         'language', 'lastQRCheckIn']);
+      // Validate common fields
+      let isValidBase = userData.keys().hasAll(['email', 'displayName', 'points', 'createdAt', 'language']) &&
+                        userData.email is string &&
+                        userData.displayName is string &&
+                        userData.displayName.trim().size() > 0 &&  // Ensure displayName is not empty
+                        userData.displayName.size() <= 50 &&     // Ensure displayName max length
+                        userData.points is number &&
+                        userData.createdAt is timestamp &&
+                        userData.language in ['en', 'ja'];
+
+      // Additional optional fields
+      let optionalFields = ['uid', 'phoneNumber', 'lastVisitScan', 'lastQRCheckIn', 'role'];
+      let allAllowedFields = ['email', 'displayName', 'points', 'createdAt', 'language', 'uid', 'phoneNumber', 'lastVisitScan', 'lastQRCheckIn', 'role'];
+      let hasOnlyAllowedFields = userData.keys().hasOnly(allAllowedFields);
+
       // Normal users can't set role to admin
-      return isValid || (isAdmin() && userData.keys().hasOnly(['uid', 'email', 'displayName',
-                                                         'points', 'phoneNumber', 'createdAt',
-                                                         'lastVisit', 'language', 'role',
-                                                         'lastQRCheckIn']));
+      let isValidRole = !(request.auth.token.admin != true && userData.role == 'admin');
+
+      return isValidBase && hasOnlyAllowedFields && isValidRole;
+    }
+
+    function isValidUserUpdateData(currentData, newData) {
+      // Check allowed fields for update
+      let allowedUpdateFields = ['displayName', 'language', 'phoneNumber'];
+      let isAdminUpdate = isAdmin() && newData.keys().hasOnly(allowedUpdateFields.concat(['points', 'role']));
+      let isOwnerUpdate = isOwner(request.resource.data.uid) && newData.keys().hasOnly(allowedUpdateFields);
+      let hasOnlyAllowedUpdateFields = isAdminUpdate || isOwnerUpdate;
+
+      // Validate displayName specifically
+      let isValidDisplayName = newData.displayName is string &&
+                               newData.displayName.trim().size() > 0 &&
+                               newData.displayName.size() <= 50;
+
+      // Validate language
+      let isValidLanguage = newData.language is string && newData.language in ['en', 'ja'];
+
+      // Prevent points/role updates by non-admins
+      let preventUnauthorizedAdminFields = (!isAdmin() &&
+                                           (newData.points != currentData.points || newData.role != currentData.role));
+      if (preventUnauthorizedAdminFields) return false;
+
+      return hasOnlyAllowedUpdateFields && isValidDisplayName && isValidLanguage;
     }
 
     // User profiles
     match /users/{userId} {
       allow read: if isOwner(userId) || isAdmin();
       allow create: if isAuthenticated() && request.auth.uid == userId && isValidUserData(request.resource.data);
-      allow update: if (isOwner(userId) && isValidUserData(request.resource.data)) || isAdmin();
-      allow delete: if isAdmin();
+      allow update: if (isAdmin() || isOwner(userId)) && isValidUserUpdateData(resource.data, request.resource.data);
+      allow delete: if isAdmin(); // Only admins can delete user profiles directly from DB
     }
 
     // Rewards collection

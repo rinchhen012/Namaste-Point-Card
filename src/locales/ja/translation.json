@@ -43,6 +43,8 @@
       "passwordTooShort": "パスワードは6文字以上で入力してください",
       "passwordsDoNotMatch": "パスワードが一致しません",
       "nameRequired": "お名前は必須です",
+      "invalidNameChars": "名前に無効な文字が含まれています (< または >)",
+      "nameTooLong": "名前は50文字を超えることはできません",
       "accountExists": "このメールアドレスは既に登録されています",
       "invalidCredentials": "メールアドレスまたはパスワードが正しくありません",
       "genericError": "問題が発生しました。もう一度お試しください。"

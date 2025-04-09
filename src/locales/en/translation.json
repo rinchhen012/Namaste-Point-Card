@@ -46,6 +46,8 @@
       "passwordTooShort": "Password must be at least 6 characters",
       "passwordsDoNotMatch": "Passwords do not match",
       "nameRequired": "Name is required",
+      "invalidNameChars": "Name contains invalid characters (< or >)",
+      "nameTooLong": "Name cannot exceed 50 characters",
       "accountExists": "An account with this email already exists",
       "invalidCredentials": "Invalid email or password",
       "genericError": "Something went wrong. Please try again."

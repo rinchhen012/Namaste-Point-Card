@@ -3,12 +3,13 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import Layout from '../components/Layout/Layout';
 import { registerUser, signInWithGoogle, signInWithApple } from '../firebase/services';
+import { useAuth } from '../contexts/AuthContext';
 
 const RegisterPage: React.FC = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const { register } = useAuth();
 
-  const [displayName, setDisplayName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -19,7 +20,6 @@ const RegisterPage: React.FC = () => {
     e.preventDefault();
     setError(null);
 
-    // Validate form
     if (password !== confirmPassword) {
       setError(t('auth.errors.passwordsDoNotMatch'));
       return;
@@ -33,15 +33,15 @@ const RegisterPage: React.FC = () => {
     setLoading(true);
 
     try {
-      await registerUser(email, password, displayName);
+      await register(email, password);
       navigate('/');
     } catch (err: any) {
+      console.error('Registration error:', err);
       if (err.code === 'auth/email-already-in-use') {
         setError(t('auth.errors.accountExists'));
       } else {
         setError(t('auth.errors.genericError'));
       }
-      console.error('Registration error:', err);
     } finally {
       setLoading(false);
     }
@@ -78,36 +78,22 @@ const RegisterPage: React.FC = () => {
   };
 
   return (
-    <Layout title={t('auth.signup')} hideNavigation>
-      <div className="flex flex-col items-center justify-center p-6">
-        <div className="w-full max-w-md">
+    <Layout title={t('auth.register')} hideNavigation>
+      <div className="flex flex-col items-center justify-center min-h-screen p-6 bg-gray-50">
+        <div className="w-full max-w-md bg-white p-8 rounded-lg shadow-md">
           <div className="text-center mb-8">
             <h1 className="text-2xl font-bold text-primary">{t('app.name')}</h1>
             <p className="text-gray-600 mt-2">{t('app.tagline')}</p>
           </div>
 
           {error && (
-            <div className="bg-red-50 text-red-700 p-3 rounded-md mb-4">
+            <div className="bg-red-50 text-red-700 p-3 rounded-md mb-4 text-sm">
               {error}
             </div>
           )}
 
-          <form onSubmit={handleRegister} className="mb-6">
-            <div className="mb-4">
-              <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
-                {t('auth.name')}
-              </label>
-              <input
-                id="name"
-                type="text"
-                value={displayName}
-                onChange={(e) => setDisplayName(e.target.value)}
-                className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
-                required
-              />
-            </div>
-
-            <div className="mb-4">
+          <form onSubmit={handleRegister} className="space-y-4">
+            <div>
               <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
                 {t('auth.email')}
               </label>
@@ -121,7 +107,7 @@ const RegisterPage: React.FC = () => {
               />
             </div>
 
-            <div className="mb-4">
+            <div>
               <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
                 {t('auth.password')}
               </label>
@@ -135,7 +121,7 @@ const RegisterPage: React.FC = () => {
               />
             </div>
 
-            <div className="mb-6">
+            <div>
               <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-1">
                 {t('auth.confirmPassword')}
               </label>
@@ -152,16 +138,9 @@ const RegisterPage: React.FC = () => {
             <button
               type="submit"
               disabled={loading}
-              className="btn-primary w-full"
+              className="w-full py-3 bg-primary text-white font-semibold rounded-lg shadow-md hover:bg-primary-dark transition duration-150 disabled:opacity-50"
             >
-              {loading ? (
-                <span className="flex items-center justify-center">
-                  <span className="inline-block animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2"></span>
-                  {t('common.loading')}
-                </span>
-              ) : (
-                t('auth.signup')
-              )}
+              {loading ? t('common.loading') : t('auth.register')}
             </button>
           </form>
 
@@ -217,8 +196,8 @@ const RegisterPage: React.FC = () => {
 
           <div className="text-center mt-6">
             <p className="text-sm text-gray-600">
-              {t('auth.alreadyHaveAccount')}{' '}
-              <Link to="/login" className="text-primary font-medium">
+              {t('auth.registerCTA')}{' '}
+              <Link to="/login" className="font-medium text-primary hover:underline">
                 {t('auth.login')}
               </Link>
             </p>

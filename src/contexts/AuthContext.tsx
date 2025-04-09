@@ -19,7 +19,7 @@ interface AuthContextType {
   userProfile: UserProfile | null;
   setUserProfile: (profile: UserProfile) => void;
   login: (email: string, password: string) => Promise<User>;
-  register: (email: string, password: string, displayName: string) => Promise<User>;
+  register: (email: string, password: string) => Promise<User>;
   logout: () => Promise<void>;
   googleSignIn: () => Promise<User>;
   appleSignIn: () => Promise<User>;
@@ -90,27 +90,27 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   // Register new user
-  const register = async (email: string, password: string, displayName: string): Promise<User> => {
+  const register = async (email: string, password: string): Promise<User> => {
     try {
       const result = await createUserWithEmailAndPassword(auth, email, password);
       const user = result.user;
 
-      // Update user profile with display name
-      await updateProfile(user, { displayName });
+      // Set default display name to "User" for Firebase Auth profile
+      await updateProfile(user, { displayName: "User" });
 
-      // Create user profile in Firestore
-      const userProfile: UserProfile = {
+      // Create user profile in Firestore with default name
+      const userProfileData: UserProfile = {
         uid: user.uid,
         email: user.email || '',
-        displayName,
+        displayName: "User", // Default display name
         points: 0,
         createdAt: Timestamp.now(),
         phoneNumber: '',
         // No need to set lastQRCheckIn here, will be set on first check-in
       };
 
-      await setDoc(doc(db, 'users', user.uid), userProfile);
-      setUserProfile(userProfile);
+      await setDoc(doc(db, 'users', user.uid), userProfileData);
+      setUserProfile(userProfileData); // Update context
 
       return user;
     } catch (error) {

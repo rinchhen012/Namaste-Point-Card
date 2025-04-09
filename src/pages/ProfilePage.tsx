@@ -98,11 +98,23 @@ const ProfilePage: React.FC = () => {
 
   const handleSaveName = async () => {
     if (!currentUser || !userProfile) return;
-    if (!newName.trim()) {
+
+    const trimmedName = newName.trim();
+
+    if (!trimmedName) {
       setEditError(t('auth.errors.nameRequired'));
       return;
     }
-    if (newName === userProfile.displayName) {
+    // Basic check for potentially harmful characters
+    if (/[<>]/g.test(trimmedName)) {
+      setEditError(t('auth.errors.invalidNameChars'));
+      return;
+    }
+    if (trimmedName.length > 50) {
+      setEditError(t('auth.errors.nameTooLong'));
+      return;
+    }
+    if (trimmedName === userProfile.displayName) {
       setIsEditingName(false);
       return;
     }
@@ -110,8 +122,8 @@ const ProfilePage: React.FC = () => {
     setLoading(true);
     setEditError(null);
     try {
-      await updateUserDisplayName(currentUser.uid, newName.trim());
-      setUserProfile({ ...userProfile, displayName: newName.trim() });
+      await updateUserDisplayName(currentUser.uid, trimmedName);
+      setUserProfile({ ...userProfile, displayName: trimmedName });
       setIsEditingName(false);
     } catch (err: any) {
       console.error('Error saving display name:', err);
