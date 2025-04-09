@@ -79,7 +79,7 @@ const RedemptionHistoryPage: React.FC = () => {
       showBackButton
       onBack={() => navigate(-1)}
     >
-      <div className="p-4">
+      <div className="w-full max-w-sm mx-auto px-4 py-6">
         {error && (
           <div className="bg-red-50 text-red-700 p-3 rounded-md mb-4">
             {error}
@@ -94,7 +94,7 @@ const RedemptionHistoryPage: React.FC = () => {
           <div className="bg-white rounded-lg shadow-md p-6 my-4 text-center">
             <p className="text-gray-600">{t('rewards.noRedemptionHistory')}</p>
             <button
-              onClick={() => navigate('/rewards')}
+              onClick={() => navigate('/coupons')}
               className="mt-4 px-4 py-2 bg-primary text-white rounded hover:bg-primary-dark"
             >
               {t('rewards.browseRewards')}
@@ -102,38 +102,42 @@ const RedemptionHistoryPage: React.FC = () => {
           </div>
         ) : (
           <div className="space-y-4">
-            <h2 className="text-lg font-semibold text-gray-800 mb-2">
+            <h2 className="text-xl font-semibold text-gray-800 mb-4">
               {t('rewards.yourRedemptionHistory')}
             </h2>
 
             {redemptions.map(redemption => {
-              console.log(`Rendering history item, Redemption ID: ${redemption.id}, Reward Name: ${redemption.rewardName}`);
+              const isClickable = !redemption.used && !isDateExpired(redemption.expiresAt);
               return (
                 <div
                   key={redemption.id}
-                  className={`bg-white rounded-lg shadow-md p-4 border-l-4 ${
+                  className={`bg-white rounded-lg shadow p-4 overflow-hidden w-full box-border border-l-4 ${
                     redemption.used
                       ? 'border-gray-300'
                       : isDateExpired(redemption.expiresAt)
                         ? 'border-red-300'
-                        : 'border-green-400 cursor-pointer'
+                        : 'border-green-400'
+                  } ${
+                    isClickable ? 'cursor-pointer hover:shadow-md transition' : ''
                   }`}
-                  onClick={() => !redemption.used && !isDateExpired(redemption.expiresAt) && handleViewRedemption(redemption)}
+                  onClick={() => isClickable && handleViewRedemption(redemption)}
                 >
-                  <div className="flex justify-between items-start mb-2">
-                    <h3 className="text-md font-medium">
+                  <div className="flex justify-between items-center mb-2 min-w-0">
+                    <h3 className="text-md font-semibold truncate mr-4">
                       {redemption.rewardName}
                     </h3>
-                    {renderStatusBadge(redemption)}
+                    <div className="flex-shrink-0">
+                      {renderStatusBadge(redemption)}
+                    </div>
                   </div>
 
-                  <div className="flex justify-between text-xs text-gray-500">
-                    <div>
+                  <div className="flex flex-wrap justify-between text-xs text-gray-500 gap-x-4">
+                    <span className="whitespace-nowrap">
                       {t('rewards.redeemed')}: {formatDate(redemption.createdAt)}
-                    </div>
-                    <div>
+                    </span>
+                    <span className="whitespace-nowrap">
                       {t('rewards.expires')}: {formatDate(redemption.expiresAt)}
-                    </div>
+                    </span>
                   </div>
                 </div>
               );

@@ -40,7 +40,7 @@ const Layout: React.FC<LayoutProps> = ({
         </header>
       )}
 
-      <main className={`flex-grow container-app ${title ? 'pt-16' : ''}`}>
+      <main className={`flex-grow ${title ? 'pt-16' : ''}`}>
         {children}
       </main>
 
