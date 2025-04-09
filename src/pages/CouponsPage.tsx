@@ -107,7 +107,7 @@ const CouponsPage: React.FC = () => {
   }
 
   return (
-    <Layout title={t('rewards.availableRewards')}>
+    <Layout title={t('rewards.coupons')}>
       <div className="p-4 space-y-6">
         {/* Current Points Display Section */}
         <div>

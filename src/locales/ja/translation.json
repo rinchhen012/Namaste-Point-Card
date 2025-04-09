@@ -133,6 +133,7 @@
   },
   "rewards": {
     "availableRewards": "利用可能なクーポン",
+    "coupons": "クーポン",
     "pointsToRedeem": "交換に{{points}}ポイント必要",
     "insufficientPoints": "あと{{more}}ポイント必要です",
     "redeemReward": "クーポンを交換",

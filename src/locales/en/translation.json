@@ -140,6 +140,7 @@
   },
   "rewards": {
     "availableRewards": "Available Coupons",
+    "coupons": "Coupons",
     "pointsToRedeem": "{{points}} points to redeem",
     "insufficientPoints": "You need {{more}} more points",
     "redeemReward": "Redeem Coupon",
