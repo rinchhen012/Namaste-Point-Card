@@ -3,16 +3,12 @@ import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import Layout from '../components/Layout/Layout';
 import { useAuth } from '../contexts/AuthContext';
-import { getAvailableCoupons as getAvailableRewards, getUserRedemptions } from '../firebase/services';
-import { Coupon as Reward, Redemption } from '../types';
-import { formatDate } from '../utils/dateUtils';
+import { getAvailableRewards, getUserRedemptions } from '../firebase/services';
+import { Coupon, Redemption } from '../types';
 
-// --- START RedemptionTimer Component (Copied from UnauthorizedPage) ---
-// Ensure useTranslation is imported above
-
+// --- START RedemptionTimer Component ---
 interface RedemptionTimerProps {
   expiryDate: Date;
-  // rewardType: string; // Add back if different formats needed
 }
 
 const RedemptionTimer: React.FC<RedemptionTimerProps> = ({ expiryDate }) => {
@@ -53,7 +49,7 @@ const CouponsPage: React.FC = () => {
   const navigate = useNavigate();
   const { currentUser, userProfile } = useAuth();
 
-  const [coupons, setCoupons] = useState<Reward[]>([]);
+  const [coupons, setCoupons] = useState<Coupon[]>([]);
   const [activeRedemptions, setActiveRedemptions] = useState<Redemption[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -71,7 +67,7 @@ const CouponsPage: React.FC = () => {
       try {
         // Fetch available coupons
         const couponsData = await getAvailableRewards();
-        setCoupons(couponsData as Reward[]);
+        setCoupons(couponsData as Coupon[]);
 
         // Fetch user's active redemptions
         const redemptionsData = await getUserRedemptions(currentUser.uid);
@@ -91,7 +87,7 @@ const CouponsPage: React.FC = () => {
     return userProfile && userProfile.points >= pointsCost;
   };
 
-  const handleRedeemCoupon = (coupon: Reward) => {
+  const handleRedeemCoupon = (coupon: Coupon) => {
     console.log('[CouponsPage] handleRedeemCoupon initiating for Coupon ID:', coupon.id);
     navigate(`/redemption/initiate`, { state: { reward: coupon } });
   };
@@ -111,21 +107,20 @@ const CouponsPage: React.FC = () => {
   }
 
   return (
-    <Layout title={t('coupons.pageTitle')}>
+    <Layout title={t('rewards.availableRewards')}>
       <div className="p-4 space-y-6">
         {/* Current Points Display Section */}
-        <div> {/* Added wrapper div for points card + history button */}
+        <div>
           <div className="bg-white rounded-lg shadow-md p-5 mb-0 w-full">
             <div className="flex justify-between items-center mb-1">
               <p className="text-sm font-medium text-gray-600">{t('home.currentPoints')}</p>
-              {/* Removed View History Button from here */}
             </div>
             <div className="flex items-baseline mt-1">
               <span className="text-3xl font-bold text-primary">{userProfile.points}</span>
               <span className="ml-2 text-sm text-gray-500">{t('common.points')}</span>
             </div>
           </div>
-          {/* Moved View History Button below the card */}
+          {/* View History Button */}
           <div className="flex justify-end mt-3">
             <button
               className="text-xs text-primary font-medium hover:underline flex items-center"
@@ -142,7 +137,7 @@ const CouponsPage: React.FC = () => {
         {/* Active Redemptions */}
         {activeRedemptions.length > 0 && (
           <div className="mb-0">
-            <h2 className="text-xl font-semibold mb-4">{t('coupons.activeRedemptionsTitle')}</h2>
+            <h2 className="text-xl font-semibold mb-4">{t('rewards.activeRedemptions')}</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {activeRedemptions.map((redemption) => {
                 // Convert Firestore Timestamp to Date object if necessary
@@ -181,7 +176,7 @@ const CouponsPage: React.FC = () => {
 
         {/* Available Coupons */}
         <div>
-          <h2 className="text-xl font-semibold mb-4">{t('coupons.availableCouponsTitle')}</h2>
+          <h2 className="text-xl font-semibold mb-4">{t('rewards.availableRewards')}</h2>
 
           {loading ? (
             <div className="flex justify-center py-6">
@@ -199,7 +194,7 @@ const CouponsPage: React.FC = () => {
             </div>
           ) : coupons.length === 0 ? (
             <div className="bg-gray-50 p-6 rounded-md text-center">
-              <p className="text-gray-600">{t('coupons.noAvailableCoupons')}</p>
+              <p className="text-gray-600">{t('rewards.noRewards')}</p>
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
@@ -210,7 +205,7 @@ const CouponsPage: React.FC = () => {
                     <div className="w-full h-52 bg-gray-200 flex-shrink-0">
                       <img
                         src={coupon.imageUrl}
-                        alt={coupon.name[userProfile.language]}
+                        alt={coupon.name && userProfile?.language ? coupon.name[userProfile.language] : coupon.name}
                         className="w-full h-full object-cover"
                       />
                     </div>
@@ -219,12 +214,14 @@ const CouponsPage: React.FC = () => {
                   {/* Content Section */}
                   <div className="p-5 flex-grow flex flex-col">
                     <div className="flex-grow">
-                      <h3 className="font-semibold text-lg mb-2">{coupon.name[userProfile.language]}</h3>
+                      <h3 className="font-semibold text-lg mb-2">
+                        {coupon.name && userProfile?.language ? coupon.name[userProfile.language] : coupon.name}
+                      </h3>
                       <p className="text-sm text-gray-600 mb-4 line-clamp-3">
-                        {coupon.description[userProfile.language]}
+                        {coupon.description && userProfile?.language ? coupon.description[userProfile.language] : coupon.description}
                       </p>
                     </div>
-                    {/* Action Section (moved inside content section for better flex behavior) */}
+                    {/* Action Section */}
                     <div className="pt-4 border-t border-gray-100 flex justify-between items-center mt-auto">
                       <p className="text-xl font-bold text-primary mr-3">
                         {coupon.pointsCost} <span className="text-sm font-medium text-gray-600">pts</span>
@@ -238,7 +235,7 @@ const CouponsPage: React.FC = () => {
                             : 'bg-gray-200 text-gray-500 cursor-not-allowed'
                         }`}
                       >
-                        {t('coupons.redeemButton')}
+                        {t('rewards.redeem')}
                       </button>
                     </div>
                   </div>

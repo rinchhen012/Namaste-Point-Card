@@ -13,7 +13,7 @@ const ScanPage = lazy(() => import('./pages/ScanPage'));
 const InStorePage = lazy(() => import('./pages/InStorePage'));
 const LoginPage = lazy(() => import('./pages/LoginPage'));
 const RegisterPage = lazy(() => import('./pages/RegisterPage'));
-const RewardsPage = lazy(() => import('./pages/RewardsPage'));
+const CouponsPage = lazy(() => import('./pages/CouponsPage'));
 const RedemptionPage = lazy(() => import('./pages/RedemptionPage'));
 const RedemptionHistoryPage = lazy(() => import('./pages/RedemptionHistoryPage'));
 const ProfilePage = lazy(() => import('./pages/ProfilePage'));
@@ -60,7 +60,8 @@ function App() {
                 <Route path="/in-store" element={<InStorePage />} />
                 <Route path="/login" element={<LoginPage />} />
                 <Route path="/register" element={<RegisterPage />} />
-                <Route path="/rewards" element={<RewardsPage />} />
+                <Route path="/coupons" element={<CouponsPage />} />
+                <Route path="/rewards" element={<Navigate to="/coupons" replace />} />
                 <Route path="/redemption/:id" element={<RedemptionPage />} />
                 <Route path="/redemption-history" element={<RedemptionHistoryPage />} />
                 <Route path="/profile" element={<ProfilePage />} />
@@ -80,7 +81,7 @@ function App() {
                 >
                   <Route index element={<AdminDashboard />} />
                   <Route path="coupons" element={<AdminCoupons />} />
-                  <Route path="rewards" element={<AdminRewards />} />
+                  <Route path="rewards" element={<AdminCoupons />} />
                 </Route>
 
                 {/* Fallback route */}

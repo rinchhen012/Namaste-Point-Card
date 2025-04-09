@@ -16,7 +16,7 @@ export interface UserProfile {
   role?: 'user' | 'admin';
 }
 
-export interface Reward {
+export interface Coupon {
   id: string;
   name: string;
   nameJa: string;
@@ -26,6 +26,9 @@ export interface Reward {
   isActive: boolean;
   imageUrl?: string;
 }
+
+// For backwards compatibility
+export type Reward = Coupon;
 
 export interface Redemption {
   id: string;

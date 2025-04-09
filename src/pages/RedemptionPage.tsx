@@ -233,7 +233,7 @@ const RedemptionPage: React.FC = () => {
       <Layout
         title={t('rewards.redeemReward')}
         showBackButton
-        onBack={() => navigate('/rewards')}
+        onBack={() => navigate('/coupons')}
       >
         <div className="p-4">
           <div className="bg-white rounded-lg shadow-md p-6 my-4">
@@ -267,7 +267,7 @@ const RedemptionPage: React.FC = () => {
 
             <div className="flex space-x-3">
               <button
-                onClick={() => navigate('/rewards')}
+                onClick={() => navigate('/coupons')}
                 className="btn-secondary w-1/2"
               >
                 {t('common.cancel')}
@@ -386,7 +386,7 @@ const RedemptionPage: React.FC = () => {
 
   // Fallback - shouldn't reach here normally
   return (
-    <Layout title={t('rewards.redemption')} showBackButton onBack={() => navigate('/rewards')}>
+    <Layout title={t('rewards.redemption')} showBackButton onBack={() => navigate('/coupons')}>
       <div className="p-4 flex justify-center items-center h-64">
         <div className="animate-spin rounded-full h-8 w-8 border-4 border-primary border-t-transparent"></div>
       </div>

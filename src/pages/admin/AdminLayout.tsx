@@ -69,15 +69,15 @@ const AdminLayout: React.FC = () => {
               Dashboard
             </Link>
             <Link
-              to="/coupons"
+              to="/admin/coupons"
               className={`block px-4 py-2 rounded-md mb-1 ${
-                isActive('/coupons')
+                isActive('/admin/coupons') || isActive('/admin/rewards')
                   ? 'bg-orange-600 text-white'
                   : 'text-gray-700 hover:bg-gray-100'
               }`}
               onClick={() => setMenuOpen(false)}
             >
-              Delivery Coupons
+              Coupons
             </Link>
             <Link
               to="/users"
@@ -89,17 +89,6 @@ const AdminLayout: React.FC = () => {
               onClick={() => setMenuOpen(false)}
             >
               Users
-            </Link>
-            <Link
-              to="/rewards"
-              className={`block px-4 py-2 rounded-md mb-1 ${
-                isActive('/rewards')
-                  ? 'bg-orange-600 text-white'
-                  : 'text-gray-700 hover:bg-gray-100'
-              }`}
-              onClick={() => setMenuOpen(false)}
-            >
-              Rewards
             </Link>
             <Link
               to="/settings"
