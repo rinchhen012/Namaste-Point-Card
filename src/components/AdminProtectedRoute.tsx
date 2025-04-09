@@ -30,4 +30,4 @@ const AdminProtectedRoute: React.FC<AdminProtectedRouteProps> = ({ children }) =
   return <>{children}</>;
 };
 
-export default AdminProtectedRoute; 
+export default AdminProtectedRoute;

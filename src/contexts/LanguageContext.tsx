@@ -35,7 +35,7 @@ export const LanguageProvider = ({ children }: LanguageProviderProps) => {
     try {
       await i18n.changeLanguage(lang);
       setLanguage(lang);
-      
+
       // Update user profile in Firestore if logged in
       if (currentUser) {
         await setUserLanguage(currentUser.uid, lang);
@@ -55,4 +55,4 @@ export const LanguageProvider = ({ children }: LanguageProviderProps) => {
       {children}
     </LanguageContext.Provider>
   );
-}; 
+};

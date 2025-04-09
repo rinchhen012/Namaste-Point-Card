@@ -1,7 +1,7 @@
-import { 
-  createUserWithEmailAndPassword, 
-  signInWithEmailAndPassword, 
-  signOut, 
+import {
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  signOut,
   sendPasswordResetEmail,
   updateProfile,
   GoogleAuthProvider,
@@ -10,11 +10,11 @@ import {
   getAuth,
   OAuthProvider
 } from 'firebase/auth';
-import { 
-  doc, 
-  getDoc, 
-  setDoc, 
-  updateDoc, 
+import {
+  doc,
+  getDoc,
+  setDoc,
+  updateDoc,
   collection,
   query,
   where,
@@ -121,7 +121,7 @@ export const registerUser = async (email: string, password: string, displayName:
   try {
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
     await updateProfile(userCredential.user, { displayName });
-    
+
     // Create user profile in Firestore
     await setDoc(doc(db, 'users', userCredential.user.uid), {
       email,
@@ -131,7 +131,7 @@ export const registerUser = async (email: string, password: string, displayName:
       lastVisitScan: null,
       language: 'ja'
     });
-    
+
     return userCredential.user;
   } catch (error) {
     throw error;
@@ -155,11 +155,11 @@ export const signInWithGoogle = async () => {
   try {
     const result = await signInWithPopup(auth, provider);
     const user = result.user;
-    
+
     // Check if user exists in Firestore
     const userRef = doc(db, 'users', user.uid);
     const userSnap = await getDoc(userRef);
-    
+
     // If user doesn't exist, create their profile
     if (!userSnap.exists()) {
       await setDoc(userRef, {
@@ -171,7 +171,7 @@ export const signInWithGoogle = async () => {
         language: 'ja'
       });
     }
-    
+
     return user;
   } catch (error) {
     throw error;
@@ -182,15 +182,15 @@ export const signInWithApple = async () => {
   const provider = new OAuthProvider('apple.com');
   provider.addScope('email');
   provider.addScope('name');
-  
+
   try {
     const result = await signInWithPopup(auth, provider);
     const user = result.user;
-    
+
     // Check if user exists in Firestore
     const userRef = doc(db, 'users', user.uid);
     const userSnap = await getDoc(userRef);
-    
+
     // If user doesn't exist, create their profile
     if (!userSnap.exists()) {
       await setDoc(userRef, {
@@ -202,7 +202,7 @@ export const signInWithApple = async () => {
         language: 'ja'
       });
     }
-    
+
     return user;
   } catch (error) {
     throw error;
@@ -213,7 +213,7 @@ export const signInWithApple = async () => {
 export async function getUserProfile(userId: string): Promise<UserProfile | null> {
   const docRef = doc(db, 'users', userId);
   const docSnap = await getDoc(docRef);
-  
+
   if (docSnap.exists()) {
     return docSnap.data() as UserProfile;
   } else {
@@ -243,35 +243,35 @@ export const validateOnlineOrderCode = async (code: string, userId: string) => {
 };
 
 export const validateQRCheckIn = async (
-  userId: string, 
-  qrCode: string, 
-  latitude: number, 
+  userId: string,
+  qrCode: string,
+  latitude: number,
   longitude: number
 ) => {
   try {
     // Check if this is dev mode with mock auth
     if (import.meta.env.DEV && import.meta.env.VITE_USE_MOCK_AUTH === 'true') {
       console.log('Using mock QR validation in dev mode');
-      
+
       // Simulate checking timestamp of last visit
       const lastVisit = mockData.pointsHistory.find(
-        h => h.userId === userId && 
+        h => h.userId === userId &&
              h.source === 'in_store_visit' &&
              h.metadata?.qrCode === qrCode
       );
-      
+
       if (lastVisit) {
         const lastVisitTime = lastVisit.timestamp.toDate();
         const hoursElapsed = (Date.now() - lastVisitTime.getTime()) / (1000 * 60 * 60);
-        
+
         if (hoursElapsed < 22) {
-          return { 
-            success: false, 
-            message: 'You have already checked in today. Please come back tomorrow!' 
+          return {
+            success: false,
+            message: 'You have already checked in today. Please come back tomorrow!'
           };
         }
       }
-      
+
       // Add to mock points history
       mockData.pointsHistory.push({
         id: 'history-' + Date.now(),
@@ -282,29 +282,29 @@ export const validateQRCheckIn = async (
         timestamp: { toDate: () => new Date() },
         metadata: { latitude, longitude, qrCode }
       });
-      
+
       return { success: true, message: 'Check-in successful! 1 point added.' };
     }
-    
+
     // For production, call the Cloud Function
     const validateQRCheckIn = httpsCallable(functions, 'validateQRCheckIn');
-    const result = await validateQRCheckIn({ 
-      userId, 
-      qrCode, 
-      latitude, 
-      longitude 
+    const result = await validateQRCheckIn({
+      userId,
+      qrCode,
+      latitude,
+      longitude
     });
-    
+
     // If validation succeeds, update user's points and record visit
     if (result.data && (result.data as any).success) {
       const userRef = doc(db, 'users', userId);
-      
+
       // Get the current user data
       const userDoc = await getDoc(userRef);
       if (!userDoc.exists()) {
         throw new Error('User not found');
       }
-      
+
       // Update user profile with points and timestamp
       await updateDoc(userRef, {
         points: increment(1),
@@ -313,7 +313,7 @@ export const validateQRCheckIn = async (
           qrCode: qrCode
         }
       });
-      
+
       // Record in points history
       await addDoc(collection(db, 'points_history'), {
         userId,
@@ -321,14 +321,14 @@ export const validateQRCheckIn = async (
         type: 'earn',
         source: 'in_store_visit',
         timestamp: Timestamp.now(),
-        metadata: { 
-          latitude, 
-          longitude, 
-          qrCode 
+        metadata: {
+          latitude,
+          longitude,
+          qrCode
         }
       });
     }
-    
+
     return result.data;
   } catch (error) {
     console.error('Error validating QR check-in:', error);
@@ -341,12 +341,12 @@ export async function getRewards(): Promise<Reward[]> {
   if (import.meta.env.DEV && import.meta.env.VITE_USE_MOCK_AUTH === 'true') {
     return mockData.rewards;
   }
-  
+
   try {
     const rewardsRef = collection(db, 'rewards');
     const rewardsSnapshot = await getDocs(rewardsRef);
     const rewards: Reward[] = [];
-    
+
     rewardsSnapshot.forEach(doc => {
       const data = doc.data();
       rewards.push({
@@ -354,7 +354,7 @@ export async function getRewards(): Promise<Reward[]> {
         ...data
       });
     });
-    
+
     return rewards;
   } catch (error) {
     console.error('Error getting rewards:', error);
@@ -369,16 +369,16 @@ export async function getAvailableRewards(): Promise<Reward[]> {
   if (import.meta.env.DEV && import.meta.env.VITE_USE_MOCK_AUTH === 'true') {
     return mockData.rewards.filter(reward => reward.active);
   }
-  
+
   try {
     const rewardsRef = collection(db, 'rewards');
     const rewardsQuery = query(rewardsRef, where('active', '==', true));
     const rewardsSnapshot = await getDocs(rewardsQuery);
     const rewards: Reward[] = [];
-    
+
     rewardsSnapshot.forEach(doc => {
       const data = doc.data();
-      
+
       // Transform the data structure to match what the RewardsPage expects
       rewards.push({
         id: doc.id,
@@ -396,7 +396,7 @@ export async function getAvailableRewards(): Promise<Reward[]> {
         imageUrl: data.imageUrl || ''
       } as Reward);
     });
-    
+
     return rewards;
   } catch (error) {
     console.error('Error getting available rewards:', error);
@@ -409,10 +409,10 @@ export async function getReward(rewardId: string): Promise<Reward | null> {
     const reward = mockData.rewards.find(r => r.id === rewardId);
     return reward || null;
   }
-  
+
   const docRef = doc(db, 'rewards', rewardId);
   const docSnap = await getDoc(docRef);
-  
+
   if (docSnap.exists()) {
     const data = docSnap.data();
     // Transform the data structure to match what the RewardsPage expects
@@ -439,19 +439,19 @@ export async function getReward(rewardId: string): Promise<Reward | null> {
 export const redeemReward = async (userId: string, rewardId: string, rewardType: string) => {
   if (import.meta.env.DEV && import.meta.env.VITE_USE_MOCK_AUTH === 'true') {
     console.log('Using mock redemption process');
-    
+
     // Find the reward in mock data
     const reward = mockData.rewards.find(r => r.id === rewardId);
-    
+
     if (!reward) {
       throw new Error('Reward not found');
     }
-    
+
     // Calculate expiration date: 15 minutes for in-store, 30 days for direct orders
-    const expirationDate = rewardType === 'direct_order_coupon' 
+    const expirationDate = rewardType === 'direct_order_coupon'
       ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // 30 days
       : new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
-    
+
     // Create a new redemption
     const newRedemption = {
       id: 'redemption-' + Date.now(),
@@ -465,10 +465,10 @@ export const redeemReward = async (userId: string, rewardId: string, rewardType:
       expiresAt: { toDate: () => expirationDate },
       used: false
     };
-    
+
     // Add to mock redemptions
     mockData.redemptions.push(newRedemption);
-    
+
     // Add to mock points history
     mockData.pointsHistory.push({
       id: 'history-' + Date.now(),
@@ -477,12 +477,12 @@ export const redeemReward = async (userId: string, rewardId: string, rewardType:
       type: 'redeem',
       source: rewardType,
       timestamp: { toDate: () => new Date() },
-      metadata: { 
-        rewardId, 
+      metadata: {
+        rewardId,
         redemptionId: newRedemption.id
       }
     });
-    
+
     return {
       redemptionId: newRedemption.id,
       expiresAt: expirationDate,
@@ -495,11 +495,11 @@ export const redeemReward = async (userId: string, rewardId: string, rewardType:
     // Get the reward details
     const rewardRef = doc(db, 'rewards', rewardId);
     const rewardSnap = await getDoc(rewardRef);
-    
+
     if (!rewardSnap.exists()) {
       throw new Error('Reward not found');
     }
-    
+
     const rewardData = rewardSnap.data();
     // Create a transformed reward object
     const reward = {
@@ -517,27 +517,27 @@ export const redeemReward = async (userId: string, rewardId: string, rewardType:
       active: rewardData.active || false,
       imageUrl: rewardData.imageUrl || ''
     };
-    
+
     // Get user profile
     const userRef = doc(db, 'users', userId);
     const userSnap = await getDoc(userRef);
-    
+
     if (!userSnap.exists()) {
       throw new Error('User not found');
     }
-    
+
     const user = userSnap.data();
-    
+
     // Check if user has enough points
     if (user.points < reward.pointsCost) {
       throw new Error('Not enough points');
     }
-    
+
     // Calculate expiration date: 15 minutes for in-store, 30 days for direct orders
-    const expirationDate = rewardType === 'direct_order_coupon' 
+    const expirationDate = rewardType === 'direct_order_coupon'
       ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // 30 days
       : new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
-    
+
     // Create redemption record
     const redemptionRef = await addDoc(collection(db, 'redemptions'), {
       userId,
@@ -550,12 +550,12 @@ export const redeemReward = async (userId: string, rewardId: string, rewardType:
       expiresAt: Timestamp.fromDate(expirationDate),
       used: false
     });
-    
+
     // Deduct points from user
     await updateDoc(userRef, {
       points: increment(-reward.pointsCost)
     });
-    
+
     // Add to points history
     await addDoc(collection(db, 'points_history'), {
       userId,
@@ -563,12 +563,12 @@ export const redeemReward = async (userId: string, rewardId: string, rewardType:
       type: 'redeem',
       source: rewardType,
       timestamp: Timestamp.now(),
-      metadata: { 
-        rewardId, 
+      metadata: {
+        rewardId,
         redemptionId: redemptionRef.id
       }
     });
-    
+
     return {
       redemptionId: redemptionRef.id,
       expiresAt: expirationDate,
@@ -608,19 +608,19 @@ export const getUserRedemptions = async (userId: string): Promise<Redemption[]> 
       where('used', '==', false),
       orderBy('createdAt', 'desc')
     );
-    
+
     const snapshot = await getDocs(q);
     const redemptions: Redemption[] = [];
-    
+
     // Current timestamp to filter out expired redemptions in memory
     const now = new Date();
-    
+
     snapshot.forEach(doc => {
       const data = doc.data();
-      
+
       // Skip if already expired
       if (data.expiresAt.toDate() < now) return;
-      
+
       redemptions.push({
         id: doc.id,
         userId: data.userId,
@@ -635,7 +635,7 @@ export const getUserRedemptions = async (userId: string): Promise<Redemption[]> 
         used: data.used
       });
     });
-    
+
     console.log('[getUserRedemptions] Returning redemption IDs:', redemptions.map(r => r.id));
     return redemptions;
   } catch (error) {
@@ -649,7 +649,7 @@ export const getRedemption = async (redemptionId: string): Promise<Redemption | 
     // Return mock redemption
     const redemption = mockData.redemptions.find(r => r.id === redemptionId);
     if (!redemption) return null;
-    
+
     return {
       id: redemption.id,
       userId: redemption.userId,
@@ -668,11 +668,11 @@ export const getRedemption = async (redemptionId: string): Promise<Redemption | 
   try {
     const redemptionRef = doc(db, 'redemptions', redemptionId);
     const redemptionSnap = await getDoc(redemptionRef);
-    
+
     if (!redemptionSnap.exists()) {
       return null;
     }
-    
+
     const data = redemptionSnap.data();
     return {
       id: redemptionSnap.id,
@@ -708,7 +708,7 @@ export async function getUserPointsHistory(userId: string): Promise<PointsTransa
     orderBy('createdAt', 'desc'),
     limit(50)
   );
-  
+
   const querySnapshot = await getDocs(q);
   return querySnapshot.docs.map(doc => ({
     id: doc.id,
@@ -745,7 +745,7 @@ export async function updateReward(rewardId: string, data: Partial<Reward>): Pro
 
 // Generate online order codes (admin only)
 export async function generateOnlineOrderCodes(
-  count: number, 
+  count: number,
   prefix: string,
   pointsAwarded: number,
   expiryDays: number
@@ -757,8 +757,8 @@ export async function generateOnlineOrderCodes(
 
 // Add points to user account and record transaction
 export async function addPoints(
-  userId: string, 
-  points: number, 
+  userId: string,
+  points: number,
   type: PointsTransaction['type'],
   metadata: {
     codeId?: string;
@@ -770,16 +770,16 @@ export async function addPoints(
   // Update user points
   const userRef = doc(db, 'users', userId);
   const userDoc = await getDoc(userRef);
-  
+
   if (!userDoc.exists()) {
     throw new Error('User not found');
   }
-  
+
   const currentPoints = userDoc.data().points || 0;
   await updateDoc(userRef, {
     points: currentPoints + points
   });
-  
+
   // Record transaction
   const transactionData: Omit<PointsTransaction, 'id'> = {
     userId,
@@ -788,7 +788,7 @@ export async function addPoints(
     createdAt: Timestamp.now(),
     ...metadata
   };
-  
+
   await addDoc(collection(db, 'points_transactions'), transactionData);
 }
 
@@ -799,7 +799,7 @@ export async function getAllUsers(limitCount: number = 50): Promise<UserProfile[
     orderBy('createdAt', 'desc'),
     limit(limitCount)
   );
-  
+
   const querySnapshot = await getDocs(q);
   return querySnapshot.docs.map(doc => ({
     ...doc.data()
@@ -813,7 +813,7 @@ export async function getOnlineOrderCodes(limitCount: number = 100): Promise<Onl
     orderBy('createdAt', 'desc'),
     limit(limitCount)
   );
-  
+
   const querySnapshot = await getDocs(q);
   return querySnapshot.docs.map(doc => ({
     ...doc.data()
@@ -865,10 +865,10 @@ export const getUserRedemptionHistory = async (userId: string): Promise<Redempti
       where('userId', '==', userId),
       orderBy('createdAt', 'desc')
     );
-    
+
     const snapshot = await getDocs(q);
     const redemptions: Redemption[] = [];
-    
+
     snapshot.forEach(doc => {
       const data = doc.data();
       redemptions.push({
@@ -885,10 +885,10 @@ export const getUserRedemptionHistory = async (userId: string): Promise<Redempti
         used: data.used
       });
     });
-    
+
     return redemptions;
   } catch (error) {
     console.error('Error getting user redemption history:', error);
     throw error;
   }
-}; 
+};

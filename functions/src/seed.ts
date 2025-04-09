@@ -123,7 +123,7 @@ export const createAdminUser = async (email: string, password: string) => {
  */
 export const createSampleCodes = async () => {
   const now = admin.firestore.Timestamp.now();
-  
+
   // Create 5 sample codes
   const codes = [
     {
@@ -194,15 +194,15 @@ export const createSampleCodes = async () => {
  */
 export const createInitialData = async () => {
   console.log('Starting to seed initial data...');
-  
+
   try {
     await createInitialRewards();
     console.log('✅ Created initial rewards');
-    
+
     // Add more seed functions here as needed
     await createSampleCodes();
     console.log('✅ Created sample online order codes');
-    
+
     console.log('✅ Seeding completed successfully');
   } catch (error) {
     console.error('❌ Error seeding data:', error);
@@ -214,4 +214,4 @@ export const createInitialData = async () => {
 //   // Check for admin token or other security
 //   await createInitialData();
 //   res.status(200).send({ success: true, message: 'Seeding completed!' });
-// }); 
+// });

@@ -7,17 +7,17 @@ import { loginUser, signInWithGoogle, signInWithApple } from '../firebase/servic
 const LoginPage: React.FC = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  
+
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     setLoading(true);
-    
+
     try {
       await loginUser(email, password);
       navigate('/');
@@ -28,11 +28,11 @@ const LoginPage: React.FC = () => {
       setLoading(false);
     }
   };
-  
+
   const handleGoogleSignIn = async () => {
     setError(null);
     setLoading(true);
-    
+
     try {
       await signInWithGoogle();
       navigate('/');
@@ -43,11 +43,11 @@ const LoginPage: React.FC = () => {
       setLoading(false);
     }
   };
-  
+
   const handleAppleSignIn = async () => {
     setError(null);
     setLoading(true);
-    
+
     try {
       await signInWithApple();
       navigate('/');
@@ -58,7 +58,7 @@ const LoginPage: React.FC = () => {
       setLoading(false);
     }
   };
-  
+
   return (
     <Layout title={t('auth.login')} hideNavigation>
       <div className="flex flex-col items-center justify-center p-6">
@@ -67,13 +67,13 @@ const LoginPage: React.FC = () => {
             <h1 className="text-2xl font-bold text-primary">{t('app.name')}</h1>
             <p className="text-gray-600 mt-2">{t('app.tagline')}</p>
           </div>
-          
+
           {error && (
             <div className="bg-red-50 text-red-700 p-3 rounded-md mb-4">
               {error}
             </div>
           )}
-          
+
           <form onSubmit={handleLogin} className="mb-6">
             <div className="mb-4">
               <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
@@ -88,7 +88,7 @@ const LoginPage: React.FC = () => {
                 required
               />
             </div>
-            
+
             <div className="mb-6">
               <div className="flex items-center justify-between mb-1">
                 <label htmlFor="password" className="block text-sm font-medium text-gray-700">
@@ -107,7 +107,7 @@ const LoginPage: React.FC = () => {
                 required
               />
             </div>
-            
+
             <button
               type="submit"
               disabled={loading}
@@ -123,7 +123,7 @@ const LoginPage: React.FC = () => {
               )}
             </button>
           </form>
-          
+
           <div className="relative mb-6">
             <div className="absolute inset-0 flex items-center">
               <div className="w-full border-t border-gray-300"></div>
@@ -134,7 +134,7 @@ const LoginPage: React.FC = () => {
               </span>
             </div>
           </div>
-          
+
           <div className="space-y-3">
             <button
               onClick={handleGoogleSignIn}
@@ -161,7 +161,7 @@ const LoginPage: React.FC = () => {
               </svg>
               {t('auth.continueWithGoogle')}
             </button>
-            
+
             <button
               onClick={handleAppleSignIn}
               disabled={loading}
@@ -173,7 +173,7 @@ const LoginPage: React.FC = () => {
               {t('auth.continueWithApple')}
             </button>
           </div>
-          
+
           <div className="text-center mt-6">
             <p className="text-sm text-gray-600">
               {t('auth.dontHaveAccount')}{' '}
@@ -188,4 +188,4 @@ const LoginPage: React.FC = () => {
   );
 };
 
-export default LoginPage; 
+export default LoginPage;

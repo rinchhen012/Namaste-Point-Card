@@ -33,10 +33,10 @@ const AppRouter = () => {
         {/* Public routes */}
         <Route path="/login" element={<AdminLogin />} />
         <Route path="/unauthorized" element={<UnauthorizedPage />} />
-        
+
         {/* Protected admin routes with layout */}
-        <Route 
-          path="/" 
+        <Route
+          path="/"
           element={
             <AdminProtectedRoute>
               <AdminLayout />
@@ -50,7 +50,7 @@ const AppRouter = () => {
           <Route path="settings" element={<AdminSettings />} />
           {/* Add other protected admin routes here */}
         </Route>
-        
+
         {/* Fallback route */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
@@ -70,4 +70,4 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
       </LanguageProvider>
     </AuthProvider>
   </React.StrictMode>
-); 
+);

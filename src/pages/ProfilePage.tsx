@@ -12,17 +12,17 @@ const ProfilePage: React.FC = () => {
   const navigate = useNavigate();
   const { currentUser, userProfile } = useAuth();
   const { language, changeLanguage } = useLanguage();
-  
+
   const [pointsHistory, setPointsHistory] = useState<PointsTransaction[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  
+
   useEffect(() => {
     if (!currentUser) {
       navigate('/login');
       return;
     }
-    
+
     const fetchPointsHistory = async () => {
       setLoading(true);
       try {
@@ -35,10 +35,10 @@ const ProfilePage: React.FC = () => {
         setLoading(false);
       }
     };
-    
+
     fetchPointsHistory();
   }, [currentUser, navigate, t]);
-  
+
   const handleLogout = async () => {
     try {
       await logoutUser();
@@ -48,16 +48,16 @@ const ProfilePage: React.FC = () => {
       setError(t('common.error'));
     }
   };
-  
+
   const toggleLanguage = () => {
     const newLanguage = language === 'en' ? 'ja' : 'en';
     changeLanguage(newLanguage);
   };
-  
+
   if (!currentUser || !userProfile) {
     return null;
   }
-  
+
   const formatTimestamp = (timestamp: any) => {
     if (timestamp && typeof timestamp.toDate === 'function') {
       const date = timestamp.toDate();
@@ -71,10 +71,10 @@ const ProfilePage: React.FC = () => {
     }
     return 'Invalid Date';
   };
-  
+
   const renderPointHistoryItem = (entry: PointsTransaction) => {
     let icon, label, pointsText;
-    
+
     if (entry.points > 0) {
       icon = '➕';
       pointsText = `+${entry.points}`;
@@ -102,7 +102,7 @@ const ProfilePage: React.FC = () => {
         label = t('pointsHistory.pointsUsed') || 'Points Used';
       }
     }
-    
+
     return (
       <div key={entry.id} className="flex items-center p-3 border-b border-gray-100 last:border-0">
         <div className="w-8 h-8 flex items-center justify-center bg-gray-100 rounded-full mr-3 text-sm">
@@ -120,7 +120,7 @@ const ProfilePage: React.FC = () => {
       </div>
     );
   };
-  
+
   return (
     <Layout title={t('profile.myProfile')}>
       <div className="p-4">
@@ -135,19 +135,19 @@ const ProfilePage: React.FC = () => {
               <p className="text-gray-600">{userProfile.email}</p>
             </div>
           </div>
-          
+
           <div className="flex items-baseline mb-2">
             <span className="text-2xl font-bold text-primary">{userProfile.points}</span>
             <span className="ml-2 text-sm text-gray-500">{t('common.points')}</span>
           </div>
         </div>
-        
+
         {/* Settings */}
         <div className="bg-white rounded-lg shadow-md overflow-hidden mb-6">
           <div className="p-4 border-b border-gray-100">
             <h3 className="font-medium">{t('profile.settings')}</h3>
           </div>
-          
+
           <button
             onClick={toggleLanguage}
             className="w-full flex justify-between items-center p-4 text-left hover:bg-gray-50 border-b border-gray-100"
@@ -162,27 +162,24 @@ const ProfilePage: React.FC = () => {
               <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
             </svg>
           </button>
-        </div>
-        
-        {/* Recent Activity */}
-        <div className="bg-white rounded-lg shadow-md overflow-hidden mb-6">
-          <div className="p-4 border-b border-gray-100">
-            <h3 className="font-medium">{t('profile.recentActivity')}</h3>
-          </div>
-          
-          {loading ? (
-            <div className="flex justify-center p-6">
-              <div className="animate-spin rounded-full h-6 w-6 border-4 border-primary border-t-transparent"></div>
+
+          {/* View History Button */}
+          <button
+            onClick={() => navigate('/redemption-history')}
+            className="w-full flex justify-between items-center p-4 text-left hover:bg-gray-50"
+          >
+            <div className="flex items-center">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <p className="font-medium">{t('rewards.viewHistory')}</p>
             </div>
-          ) : pointsHistory.length === 0 ? (
-            <p className="p-4 text-center text-gray-500">{t('pointsHistory.noHistory')}</p>
-          ) : (
-            <div>
-              {pointsHistory.slice(0, 5).map(renderPointHistoryItem)}
-            </div>
-          )}
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
+            </svg>
+          </button>
         </div>
-        
+
         {/* Logout Button */}
         <button
           onClick={handleLogout}
@@ -190,7 +187,7 @@ const ProfilePage: React.FC = () => {
         >
           {t('auth.logout')}
         </button>
-        
+
         {/* App Version */}
         <p className="text-center text-xs text-gray-500">
           {t('profile.version')} 1.0.0
@@ -200,4 +197,4 @@ const ProfilePage: React.FC = () => {
   );
 };
 
-export default ProfilePage; 
+export default ProfilePage;

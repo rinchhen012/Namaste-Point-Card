@@ -33,7 +33,7 @@ const AdminCoupons: React.FC = () => {
       try {
         setLoading(true);
         setError(null);
-        
+
         // In development mode, use mock data
         if (import.meta.env.DEV && import.meta.env.VITE_USE_MOCK_AUTH === 'true') {
           const mockCoupons = [
@@ -61,12 +61,12 @@ const AdminCoupons: React.FC = () => {
               expiresAt: new Date(Date.now() + 29 * 24 * 60 * 60 * 1000)
             }
           ];
-          
+
           setCoupons(mockCoupons as Coupon[]);
           setLoading(false);
           return;
         }
-        
+
         // For production, fetch real data
         const couponsData = await getCoupons();
         setCoupons(couponsData as Coupon[]);
@@ -77,7 +77,7 @@ const AdminCoupons: React.FC = () => {
         setLoading(false);
       }
     };
-    
+
     loadCoupons();
   }, []);
 
@@ -93,21 +93,21 @@ const AdminCoupons: React.FC = () => {
     try {
       setLoading(true);
       setError(null);
-      
+
       // In development mode, mock the creation
       if (import.meta.env.DEV && import.meta.env.VITE_USE_MOCK_AUTH === 'true') {
         const newCoupons: Coupon[] = [];
         const generatedCodes: Array<{code: string, expiresAt: Date}> = [];
-        
+
         for (let i = 0; i < formData.codeCount; i++) {
           // Generate a random code if enabled
-          const randomString = formData.generateRandomCodes 
+          const randomString = formData.generateRandomCodes
             ? Math.random().toString(36).substring(2, 7).toUpperCase()
             : (i + 1).toString().padStart(5, '0');
-            
+
           const code = `${formData.codePrefix}-${randomString}`;
           const expiresAt = new Date(Date.now() + parseInt(formData.expiryDays.toString()) * 24 * 60 * 60 * 1000);
-          
+
           const coupon = {
             id: `coupon-new-${Date.now()}-${i}`,
             code,
@@ -115,11 +115,11 @@ const AdminCoupons: React.FC = () => {
             createdAt: new Date(),
             expiresAt
           };
-          
+
           newCoupons.push(coupon as Coupon);
           generatedCodes.push({ code, expiresAt });
         }
-        
+
         setCoupons([...newCoupons, ...coupons]);
         setNewlyGeneratedCodes(generatedCodes);
         setShowPrintableView(true);
@@ -127,15 +127,15 @@ const AdminCoupons: React.FC = () => {
         setLoading(false);
         return;
       }
-      
+
       // For production, create real coupons
       const result = await createCoupon(
         formData.codePrefix,
-        parseInt(formData.codeCount.toString()), 
-        parseInt(formData.expiryDays.toString()), 
+        parseInt(formData.codeCount.toString()),
+        parseInt(formData.expiryDays.toString()),
         formData.generateRandomCodes
       );
-      
+
       // Create the list of codes with expiration dates
       if (result && result.codes) {
         const expiryDate = new Date(Date.now() + parseInt(formData.expiryDays.toString()) * 24 * 60 * 60 * 1000);
@@ -146,7 +146,7 @@ const AdminCoupons: React.FC = () => {
         setNewlyGeneratedCodes(generatedCodes);
         setShowPrintableView(true);
       }
-      
+
       // Reload coupons to get the newly created ones
       const couponsData = await getCoupons();
       setCoupons(couponsData as Coupon[]);
@@ -162,27 +162,27 @@ const AdminCoupons: React.FC = () => {
   const handleDeactivateCoupon = async (couponId: string) => {
     try {
       setLoading(true);
-      
+
       // In development mode, mock the deactivation
       if (import.meta.env.DEV && import.meta.env.VITE_USE_MOCK_AUTH === 'true') {
         setCoupons(
-          coupons.map(coupon => 
-            coupon.id === couponId 
-              ? { ...coupon, expiresAt: new Date(Date.now() - 1000) } 
+          coupons.map(coupon =>
+            coupon.id === couponId
+              ? { ...coupon, expiresAt: new Date(Date.now() - 1000) }
               : coupon
           )
         );
         setLoading(false);
         return;
       }
-      
+
       // For production, deactivate the real coupon
       await deactivateCoupon(couponId);
-      
+
       // Reload coupons
       const couponsData = await getCoupons();
       setCoupons(couponsData as Coupon[]);
-      
+
       setLoading(false);
     } catch (err) {
       console.error('Error deactivating coupon:', err);
@@ -194,13 +194,13 @@ const AdminCoupons: React.FC = () => {
   return (
     <>
       <h2 className="text-2xl font-semibold mb-6">Delivery Coupons</h2>
-      
+
       {error && (
         <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
           {error}
         </div>
       )}
-      
+
       <div className="mb-6 flex justify-between items-center">
         <div>
           <button
@@ -214,7 +214,7 @@ const AdminCoupons: React.FC = () => {
           {coupons.filter(c => !c.used && !isDateExpired(c.expiresAt)).length} active coupons
         </div>
       </div>
-      
+
       {/* Print newly generated codes */}
       {showPrintableView && newlyGeneratedCodes.length > 0 && (
         <div className="bg-green-50 border border-green-200 p-4 rounded-md mb-6">
@@ -222,7 +222,7 @@ const AdminCoupons: React.FC = () => {
             <h3 className="text-lg font-medium text-green-800">
               {newlyGeneratedCodes.length} new coupons generated!
             </h3>
-            <button 
+            <button
               onClick={() => setShowPrintableView(false)}
               className="text-sm text-gray-500 hover:text-gray-700"
             >
@@ -241,7 +241,7 @@ const AdminCoupons: React.FC = () => {
       {showCreateForm && (
         <div className="bg-white rounded-lg shadow-md p-6 mb-6">
           <h3 className="text-lg font-medium mb-4">Create New Coupons</h3>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <label className="block text-gray-700 mb-2">Coupon Prefix</label>
@@ -257,7 +257,7 @@ const AdminCoupons: React.FC = () => {
                 Prefix for the coupon code (e.g. DEL for delivery)
               </p>
             </div>
-            
+
             <div>
               <label className="block text-gray-700 mb-2">Number of Coupons</label>
               <input
@@ -273,7 +273,7 @@ const AdminCoupons: React.FC = () => {
                 How many coupons to generate (max 100)
               </p>
             </div>
-            
+
             <div>
               <label className="block text-gray-700 mb-2">Expiry (days)</label>
               <input
@@ -288,7 +288,7 @@ const AdminCoupons: React.FC = () => {
                 Number of days until the coupons expire
               </p>
             </div>
-            
+
             <div className="flex items-center">
               <input
                 type="checkbox"
@@ -303,7 +303,7 @@ const AdminCoupons: React.FC = () => {
               </label>
             </div>
           </div>
-          
+
           <div className="mt-6">
             <button
               onClick={handleCreateCoupons}
@@ -315,7 +315,7 @@ const AdminCoupons: React.FC = () => {
           </div>
         </div>
       )}
-      
+
       {/* Coupons Table */}
       {loading && !showCreateForm ? (
         <div className="flex justify-center items-center h-64">
@@ -362,14 +362,14 @@ const AdminCoupons: React.FC = () => {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                          coupon.used 
-                            ? 'bg-gray-100 text-gray-800' 
+                          coupon.used
+                            ? 'bg-gray-100 text-gray-800'
                             : isDateExpired(coupon.expiresAt)
                               ? 'bg-red-100 text-red-800'
                               : 'bg-green-100 text-green-800'
                         }`}>
-                          {coupon.used 
-                            ? 'Used' 
+                          {coupon.used
+                            ? 'Used'
                             : isDateExpired(coupon.expiresAt)
                               ? 'Expired'
                               : 'Active'}
@@ -407,4 +407,4 @@ const AdminCoupons: React.FC = () => {
   );
 };
 
-export default AdminCoupons; 
+export default AdminCoupons;

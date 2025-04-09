@@ -5,34 +5,34 @@ service firebase.storage {
     match /{allPaths=**} {
       allow read, write: if false;
     }
-    
+
     // Check if user is admin
     function isAdmin() {
-      return request.auth != null && 
+      return request.auth != null &&
         firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
-    
+
     // Public assets (reward images, etc.)
     match /public/{allImages=**} {
       allow read: if true;
       allow write: if isAdmin();
     }
-    
+
     // User profile pictures
     match /users/{userId}/{allImages=**} {
       allow read: if true; // Anyone can view profile pictures
       allow write: if request.auth != null && request.auth.uid == userId;
     }
-    
+
     // Admin-only files
     match /admin/{allPaths=**} {
       allow read, write: if isAdmin();
     }
-    
+
     // Rewards images
     match /rewards/{rewardId} {
       allow read: if true;
       allow write: if isAdmin();
     }
   }
-} 
+}

@@ -39,7 +39,7 @@ export const AdminAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
       const userDocRef = doc(db, 'users', user.uid);
       const userDoc = await getDoc(userDocRef);
-      
+
       if (userDoc.exists() && userDoc.data().role === 'admin') {
         setIsAdminAuthenticated(true);
         setCurrentAdminUser(user);
@@ -72,7 +72,7 @@ export const AdminAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         delete: () => Promise.resolve(),
         toJSON: () => ({})
       } as unknown as User;
-      
+
       setIsAdminAuthenticated(true);
       setCurrentAdminUser(mockUser);
       setAdminAuthLoading(false);
@@ -109,7 +109,7 @@ export const AdminAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
             delete: () => Promise.resolve(),
             toJSON: () => ({})
           } as unknown as User;
-          
+
           setIsAdminAuthenticated(true);
           setCurrentAdminUser(mockUser);
           return true;
@@ -161,4 +161,4 @@ export const AdminAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   );
 };
 
-export default AdminAuthContext; 
+export default AdminAuthContext;

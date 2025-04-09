@@ -5,29 +5,29 @@ service cloud.firestore {
     function isAuthenticated() {
       return request.auth != null;
     }
-    
+
     function isOwner(userId) {
       return isAuthenticated() && request.auth.uid == userId;
     }
-    
+
     function isAdmin() {
       // Check for custom claims first (more secure and faster)
-      return isAuthenticated() && 
-        (request.auth.token.admin == true || 
+      return isAuthenticated() &&
+        (request.auth.token.admin == true ||
          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin');
     }
-    
+
     function isValidUserData(userData) {
-      let isValid = userData.keys().hasOnly(['uid', 'email', 'displayName', 'points', 
-                                         'phoneNumber', 'createdAt', 'lastVisit', 
+      let isValid = userData.keys().hasOnly(['uid', 'email', 'displayName', 'points',
+                                         'phoneNumber', 'createdAt', 'lastVisit',
                                          'language', 'lastQRCheckIn']);
       // Normal users can't set role to admin
-      return isValid || (isAdmin() && userData.keys().hasOnly(['uid', 'email', 'displayName', 
-                                                         'points', 'phoneNumber', 'createdAt', 
+      return isValid || (isAdmin() && userData.keys().hasOnly(['uid', 'email', 'displayName',
+                                                         'points', 'phoneNumber', 'createdAt',
                                                          'lastVisit', 'language', 'role',
                                                          'lastQRCheckIn']));
     }
-    
+
     // User profiles
     match /users/{userId} {
       allow read: if isOwner(userId) || isAdmin();
@@ -35,13 +35,13 @@ service cloud.firestore {
       allow update: if (isOwner(userId) && isValidUserData(request.resource.data)) || isAdmin();
       allow delete: if isAdmin();
     }
-    
+
     // Rewards collection
     match /rewards/{rewardId} {
       allow read: if isAuthenticated();
       allow write: if isAdmin();
     }
-    
+
     // Redemptions collection
     match /redemptions/{redemptionId} {
       allow read: if isAuthenticated() && (
@@ -49,26 +49,26 @@ service cloud.firestore {
       );
       allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
       allow update: if isAdmin() || (
-        isAuthenticated() && 
-        resource.data.userId == request.auth.uid && 
+        isAuthenticated() &&
+        resource.data.userId == request.auth.uid &&
         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['isUsed'])
       );
       allow delete: if isAdmin();
     }
-    
+
     // Points transactions
     match /points_transactions/{transactionId} {
       allow read: if isAuthenticated() && (
         resource.data.userId == request.auth.uid || isAdmin()
       );
       allow create: if isAdmin() || (
-        isAuthenticated() && 
-        request.resource.data.userId == request.auth.uid && 
+        isAuthenticated() &&
+        request.resource.data.userId == request.auth.uid &&
         request.resource.data.type in ['in-store', 'online-order', 'reward-redemption']
       );
       allow update, delete: if isAdmin();
     }
-    
+
     // Points history - users can read their own, admins can read/write all
     match /points_history/{historyId} {
       allow read: if isAuthenticated() && (
@@ -76,29 +76,29 @@ service cloud.firestore {
       );
       allow write: if isAdmin();
     }
-    
+
     // Online order codes - admin only
     match /online_order_codes/{codeId} {
       allow read, write: if isAdmin();
       // Special case: validate code function needs to read this
       allow get: if isAuthenticated() && exists(/databases/$(database)/documents/online_order_codes/$(codeId));
     }
-    
+
     // Unique order codes - admin only
     match /unique_order_codes/{codeId} {
       allow read, write: if isAdmin();
       // Users can validate their own codes
       allow get: if isAuthenticated();
     }
-    
+
     // Admin-only collections
     match /admin/{document=**} {
       allow read, write: if isAdmin();
     }
-    
+
     // Delivery coupons - admin only
     match /delivery_coupons/{couponId} {
       allow read, write: if isAdmin();
     }
   }
-} 
+}

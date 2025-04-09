@@ -5,15 +5,15 @@ import { useTranslation } from 'react-i18next';
 const BottomNavigation: React.FC = () => {
   const { t } = useTranslation();
   const location = useLocation();
-  
+
   const isActive = (path: string) => {
     return location.pathname === path;
   };
-  
+
   return (
     <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 flex justify-around items-center h-16 z-10">
-      <Link 
-        to="/" 
+      <Link
+        to="/"
         className={`flex flex-col items-center justify-center w-full h-full ${isActive('/') ? 'text-primary' : 'text-gray-500'}`}
         aria-label={t('home.home')}
       >
@@ -21,9 +21,9 @@ const BottomNavigation: React.FC = () => {
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
         </svg>
       </Link>
-      
-      <Link 
-        to="/rewards" 
+
+      <Link
+        to="/rewards"
         className={`flex flex-col items-center justify-center w-full h-full ${isActive('/rewards') ? 'text-primary' : 'text-gray-500'}`}
         aria-label={t('rewards.rewards')}
       >
@@ -31,9 +31,9 @@ const BottomNavigation: React.FC = () => {
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v13m0-13V6a2 2 0 112 2h-2zm0 0V5.5A2.5 2.5 0 109.5 8H12zm-7 4h14M5 12a2 2 0 110-4h14a2 2 0 110 4M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7" />
         </svg>
       </Link>
-      
-      <Link 
-        to="/scan" 
+
+      <Link
+        to="/scan"
         className="flex flex-col items-center justify-center w-full h-full"
         aria-label={t('scan.scan')}
       >
@@ -43,9 +43,9 @@ const BottomNavigation: React.FC = () => {
           </svg>
         </div>
       </Link>
-      
-      <Link 
-        to="/info" 
+
+      <Link
+        to="/info"
         className={`flex flex-col items-center justify-center w-full h-full ${isActive('/info') ? 'text-primary' : 'text-gray-500'}`}
         aria-label={t('info.info')}
       >
@@ -53,9 +53,9 @@ const BottomNavigation: React.FC = () => {
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
         </svg>
       </Link>
-      
-      <Link 
-        to="/profile" 
+
+      <Link
+        to="/profile"
         className={`flex flex-col items-center justify-center w-full h-full ${isActive('/profile') ? 'text-primary' : 'text-gray-500'}`}
         aria-label={t('profile.profile')}
       >
@@ -67,4 +67,4 @@ const BottomNavigation: React.FC = () => {
   );
 };
 
-export default BottomNavigation; 
+export default BottomNavigation;

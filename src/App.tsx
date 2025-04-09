@@ -18,7 +18,6 @@ const RedemptionPage = lazy(() => import('./pages/RedemptionPage'));
 const RedemptionHistoryPage = lazy(() => import('./pages/RedemptionHistoryPage'));
 const ProfilePage = lazy(() => import('./pages/ProfilePage'));
 const InfoPage = lazy(() => import('./pages/InfoPage'));
-const CodeEntryPage = lazy(() => import('./pages/CodeEntryPage'));
 
 // Admin pages
 const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard'));
@@ -66,12 +65,13 @@ function App() {
                 <Route path="/redemption-history" element={<RedemptionHistoryPage />} />
                 <Route path="/profile" element={<ProfilePage />} />
                 <Route path="/info" element={<InfoPage />} />
-                <Route path="/code-entry" element={<CodeEntryPage />} />
-                
+                {/* Redirect old code-entry URLs to scan page which now has integrated manual entry */}
+                <Route path="/code-entry" element={<Navigate to="/scan" replace />} />
+
                 {/* Admin routes */}
                 <Route path="/admin/login" element={<AdminLogin />} />
-                <Route 
-                  path="/admin" 
+                <Route
+                  path="/admin"
                   element={
                     <AdminProtectedRoute>
                       <AdminLayout />
@@ -82,7 +82,7 @@ function App() {
                   <Route path="coupons" element={<AdminCoupons />} />
                   <Route path="rewards" element={<AdminRewards />} />
                 </Route>
-                
+
                 {/* Fallback route */}
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>

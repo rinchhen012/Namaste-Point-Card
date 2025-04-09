@@ -34,9 +34,9 @@ const HomePage: React.FC = () => {
             <span className="text-4xl font-bold text-primary">{userProfile.points}</span>
             <span className="ml-2 text-gray-500">{t('common.points')}</span>
           </div>
-          
+
           <div className="mt-4 bg-gray-100 rounded-full h-4">
-            <div 
+            <div
               className="bg-primary h-4 rounded-full"
               style={{ width: `${Math.min(100, (userProfile.points % 10) * 10)}%` }}
             ></div>
@@ -57,7 +57,7 @@ const HomePage: React.FC = () => {
             </svg>
             {t('home.scanDeliveryCode')}
           </button>
-          
+
           <button
             onClick={() => navigate('/in-store')}
             className="btn-primary py-4 flex items-center justify-center"
@@ -76,7 +76,7 @@ const HomePage: React.FC = () => {
             <li>{t('info.earnInStore')}</li>
             <li>{t('info.onePointPerDay')}</li>
           </ul>
-          
+
           <div className="mt-4 pt-4 border-t border-gray-100">
             <button
               onClick={() => navigate('/rewards')}
@@ -94,4 +94,4 @@ const HomePage: React.FC = () => {
   );
 };
 
-export default HomePage; 
+export default HomePage;

@@ -20,10 +20,10 @@ const UnauthorizedPage: React.FC = () => {
           Unauthorized Access
         </h1>
         <p className="text-gray-700 mb-6">
-          You do not have permission to view this page. 
+          You do not have permission to view this page.
           Please log in with an administrator account or contact support.
         </p>
-        <button 
+        <button
           onClick={handleLogout}
           className="px-6 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-50 transition duration-200"
         >
@@ -34,4 +34,4 @@ const UnauthorizedPage: React.FC = () => {
   );
 };
 
-export default UnauthorizedPage; 
+export default UnauthorizedPage;

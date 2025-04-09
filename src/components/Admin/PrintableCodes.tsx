@@ -13,7 +13,7 @@ const PrintableCodes: React.FC<PrintableCodesProps> = ({ codes, title = "Deliver
   const printCodes = () => {
     const printWindow = window.open('', '_blank');
     if (!printWindow) return;
-    
+
     const html = `
       <html>
         <head>
@@ -87,11 +87,11 @@ const PrintableCodes: React.FC<PrintableCodesProps> = ({ codes, title = "Deliver
         </body>
       </html>
     `;
-    
+
     printWindow.document.open();
     printWindow.document.write(html);
     printWindow.document.close();
-    
+
     // Automatically print when loaded
     printWindow.onload = function() {
       printWindow.setTimeout(() => {
@@ -100,7 +100,7 @@ const PrintableCodes: React.FC<PrintableCodesProps> = ({ codes, title = "Deliver
       }, 500);
     };
   };
-  
+
   return (
     <div>
       <button
@@ -113,4 +113,4 @@ const PrintableCodes: React.FC<PrintableCodesProps> = ({ codes, title = "Deliver
   );
 };
 
-export default PrintableCodes; 
+export default PrintableCodes;

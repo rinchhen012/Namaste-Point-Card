@@ -37,14 +37,14 @@ const useGeolocation = (): UseGeolocationReturn => {
   const getPosition = (): Promise<GeolocationPosition> => {
     return new Promise((resolve, reject) => {
       setLoading(true);
-      
+
       if (!navigator.geolocation) {
         setError('Geolocation is not supported by your browser');
         setLoading(false);
         reject(new Error('Geolocation is not supported by your browser'));
         return;
       }
-      
+
       navigator.geolocation.getCurrentPosition(
         (position) => {
           const coords = {
@@ -87,4 +87,4 @@ const useGeolocation = (): UseGeolocationReturn => {
   return { position, error, loading, getPosition, calculateDistance };
 };
 
-export default useGeolocation; 
+export default useGeolocation;

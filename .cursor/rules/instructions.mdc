@@ -1,6 +1,6 @@
 ---
-description: 
-globs: 
+description:
+globs:
 alwaysApply: true
 ---
 Security Checklist (What can be done in CursorAI & software-level not infrastructure!)

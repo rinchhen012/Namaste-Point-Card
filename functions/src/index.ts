@@ -48,7 +48,7 @@ interface AddAdminRoleData {
 
 /**
  * Validates an online order code and awards points to the user
- * 
+ *
  * @param code - The online order code to validate
  * @returns A success/failure message and points awarded
  */
@@ -111,7 +111,7 @@ export const validateOnlineCode = functions.https.onCall(
         const userData = userDoc.data();
         const currentPoints = userData?.points || 0;
         const pointsToAdd = codeData.pointsAwarded || 5;
-        
+
         transaction.update(userRef, {
           points: currentPoints + pointsToAdd,
           lastVisit: now
@@ -144,10 +144,10 @@ export const validateOnlineCode = functions.https.onCall(
 
 /**
  * Validates a QR code check-in based on the code, geolocation, and time constraints
- * 
+ *
  * @param qrCode - The QR code scanned from the restaurant
  * @param latitude - User's current latitude
- * @param longitude - User's current longitude 
+ * @param longitude - User's current longitude
  * @returns Success or failure message
  */
 export const validateQRCheckIn = functions.https.onCall(
@@ -161,7 +161,7 @@ export const validateQRCheckIn = functions.https.onCall(
     if (!qrCode) {
       return { success: false, message: 'QR code is required' };
     }
-    
+
     if (latitude === undefined || longitude === undefined) {
       return { success: false, message: 'Location data required' };
     }
@@ -177,30 +177,30 @@ export const validateQRCheckIn = functions.https.onCall(
         'NAMASTE-TOKYO-MAIN': { lat: 35.6812, lng: 139.6314 },
         'NAMASTE-OSAKA-MAIN': { lat: 34.6937, lng: 135.5022 }
       };
-      
+
       // Check if the QR code is valid
       if (!Object.keys(validQRCodes).includes(qrCode)) {
         return { success: false, message: 'Invalid QR code' };
       }
-      
+
       // Get the location associated with this QR code
       const locationData = validQRCodes[qrCode as keyof typeof validQRCodes];
       const restaurantLat = locationData.lat;
       const restaurantLng = locationData.lng;
       const maxDistanceInMeters = 100; // 100 meters radius
-      
+
       // Calculate distance between user and restaurant
       const distance = calculateDistance(
-        latitude, 
-        longitude, 
-        restaurantLat, 
+        latitude,
+        longitude,
+        restaurantLat,
         restaurantLng
       );
 
       // Check if user is within the radius
       if (distance > maxDistanceInMeters) {
-        return { 
-          success: false, 
+        return {
+          success: false,
           message: 'You must be at the restaurant to check in',
           distance: Math.round(distance)
         };
@@ -209,23 +209,23 @@ export const validateQRCheckIn = functions.https.onCall(
       // Get the user document to check their last QR check-in time
       const userRef = db.collection('users').doc(userId);
       const userDoc = await userRef.get();
-      
+
       if (!userDoc.exists) {
         return { success: false, message: 'User not found' };
       }
-      
+
       const userData = userDoc.data();
-      
+
       // Check if user has already checked in with this QR code recently (within 22 hours)
       if (userData?.lastQRCheckIn && userData.lastQRCheckIn.qrCode === qrCode) {
         const lastCheckInTime = userData.lastQRCheckIn.timestamp.toMillis();
         const now = Date.now();
         const hoursSinceLastCheckIn = (now - lastCheckInTime) / (1000 * 60 * 60);
-        
+
         // If less than 22 hours have passed, reject the check-in
         if (hoursSinceLastCheckIn < 22) {
-          return { 
-            success: false, 
+          return {
+            success: false,
             message: 'You have already checked in today. Please come back tomorrow!'
           };
         }
@@ -242,7 +242,7 @@ export const validateQRCheckIn = functions.https.onCall(
         const latestUserData = latestUserDoc.data();
         const currentPoints = latestUserData?.points || 0;
         const pointsToAdd = 1; // 1 point for check-in
-        
+
         // Update user points and last QR check-in
         transaction.update(userRef, {
           points: currentPoints + pointsToAdd,
@@ -296,7 +296,7 @@ export const generateOnlineOrderCodes = functions.https.onCall(
       }
 
       const { count = 1, prefix = 'NAMASTE', pointsAwarded = 5, expiryDays = 60 } = data;
-      
+
       if (count < 1 || count > 100) {
         return { success: false, message: 'Count must be between 1 and 100' };
       }
@@ -304,7 +304,7 @@ export const generateOnlineOrderCodes = functions.https.onCall(
       const codes: string[] = [];
       const batch = db.batch();
       const now = admin.firestore.Timestamp.now();
-      
+
       // Calculate expiry date (default 60 days = 2 months)
       const expiryDate = new Date(now.toMillis());
       expiryDate.setDate(expiryDate.getDate() + expiryDays);
@@ -315,7 +315,7 @@ export const generateOnlineOrderCodes = functions.https.onCall(
         // Generate a unique code
         const randomChars = Math.random().toString(36).substring(2, 8).toUpperCase();
         const code = `${prefix}-${randomChars}`;
-        
+
         // Create a document for the code
         const codeRef = db.collection('online_order_codes').doc();
         batch.set(codeRef, {
@@ -325,7 +325,7 @@ export const generateOnlineOrderCodes = functions.https.onCall(
           expiresAt,
           pointsAwarded
         });
-        
+
         codes.push(code);
       }
 
@@ -370,7 +370,7 @@ export const getAdminStats = functions.https.onCall(
       const thirtyDaysAgo = new Date();
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
       const thirtyDaysAgoTimestamp = admin.firestore.Timestamp.fromDate(thirtyDaysAgo);
-      
+
       const activeUsersSnapshot = await db.collection('users')
         .where('lastVisit', '>=', thirtyDaysAgoTimestamp)
         .count()
@@ -409,9 +409,9 @@ export const getAdminStats = functions.https.onCall(
  * Uses the Haversine formula
  */
 function calculateDistance(
-  lat1: number, 
-  lon1: number, 
-  lat2: number, 
+  lat1: number,
+  lon1: number,
+  lat2: number,
   lon2: number
 ): number {
   const R = 6371e3; // Earth's radius in meters
@@ -438,12 +438,12 @@ export const addAdminRole = functions.https.onCall(
         'Only authenticated users can add admin roles'
       );
     }
-    
+
     // Get the user's custom claims to check if they're an admin
     const callerUid = context.auth.uid;
     const callerUserRecord = await admin.auth().getUser(callerUid);
     const callerCustomClaims = callerUserRecord.customClaims;
-    
+
     // Only allow existing admins to create new admins
     // For the first admin, you'll need to manually update in Firebase Console
     if (!callerCustomClaims?.admin) {
@@ -452,7 +452,7 @@ export const addAdminRole = functions.https.onCall(
         'Only admins can add admin roles'
       );
     }
-    
+
     try {
       // Get the user by email
       const { email } = data;
@@ -462,20 +462,20 @@ export const addAdminRole = functions.https.onCall(
           'Email is required'
         );
       }
-      
+
       // Get the user
       const user = await admin.auth().getUserByEmail(email);
-      
+
       // Set admin custom claim
       await admin.auth().setCustomUserClaims(user.uid, {
         admin: true
       });
-      
+
       // Update the user's role field in Firestore
       await admin.firestore().collection('users').doc(user.uid).update({
         role: 'admin'
       });
-      
+
       return {
         result: `${email} has been made an admin`,
         success: true
@@ -501,26 +501,26 @@ interface InitialAdminRequest {
 export const createInitialAdmin = functions.https.onRequest(async (req, res) => {
   // This function should only be callable in development or via a secure console
   // Not for production use
-  
+
   // Only allow POST method
   if (req.method !== 'POST') {
     res.status(405).send('Method Not Allowed');
     return;
   }
-  
+
   // Check secret key to authorize this operation
   const { secretKey, email, password } = req.body as InitialAdminRequest;
-  
+
   if (secretKey !== functions.config().admin?.setup_key) {
     res.status(403).send('Unauthorized');
     return;
   }
-  
+
   if (!email || !password) {
     res.status(400).send('Email and password are required');
     return;
   }
-  
+
   try {
     // Check if user already exists
     try {
@@ -530,19 +530,19 @@ export const createInitialAdmin = functions.https.onRequest(async (req, res) => 
     } catch (error) {
       // User doesn't exist, continue creating
     }
-    
+
     // Create user
     const userRecord = await admin.auth().createUser({
       email,
       password,
       emailVerified: true
     });
-    
+
     // Set custom claims
     await admin.auth().setCustomUserClaims(userRecord.uid, {
       admin: true
     });
-    
+
     // Create user document in Firestore
     await admin.firestore().collection('users').doc(userRecord.uid).set({
       uid: userRecord.uid,
@@ -552,7 +552,7 @@ export const createInitialAdmin = functions.https.onRequest(async (req, res) => 
       points: 0,
       createdAt: admin.firestore.FieldValue.serverTimestamp()
     });
-    
+
     res.status(200).send({
       message: 'Admin user created successfully',
       uid: userRecord.uid

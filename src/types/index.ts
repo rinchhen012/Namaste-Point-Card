@@ -121,4 +121,4 @@ export type DashboardStats = {
   totalRedemptions: number;
   pointsIssued: number;
   pointsRedeemed: number;
-}; 
+};

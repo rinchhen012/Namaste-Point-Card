@@ -7,13 +7,13 @@ import { format } from 'date-fns';
  */
 export const formatDate = (date: any): string => {
   if (!date) return 'N/A';
-  
+
   try {
     // Handle Firebase Timestamp
     if (typeof date.toDate === 'function') {
       return format(date.toDate(), 'yyyy/MM/dd');
     }
-    
+
     // Handle Date objects or timestamp numbers
     return format(new Date(date), 'yyyy/MM/dd');
   } catch (error) {
@@ -29,13 +29,13 @@ export const formatDate = (date: any): string => {
  */
 export const formatDateTime = (date: any): string => {
   if (!date) return 'N/A';
-  
+
   try {
     // Handle Firebase Timestamp
     if (typeof date.toDate === 'function') {
       return format(date.toDate(), 'yyyy/MM/dd HH:mm');
     }
-    
+
     // Handle Date objects or timestamp numbers
     return format(new Date(date), 'yyyy/MM/dd HH:mm');
   } catch (error) {
@@ -51,7 +51,7 @@ export const formatDateTime = (date: any): string => {
  */
 export const isDateExpired = (date: any): boolean => {
   if (!date) return false;
-  
+
   try {
     const dateObj = typeof date.toDate === 'function' ? date.toDate() : new Date(date);
     return dateObj < new Date();
@@ -59,4 +59,4 @@ export const isDateExpired = (date: any): boolean => {
     console.error('Error checking if date is expired:', error);
     return false;
   }
-}; 
+};

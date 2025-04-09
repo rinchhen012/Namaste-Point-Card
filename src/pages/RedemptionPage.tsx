@@ -14,28 +14,28 @@ const RedemptionPage: React.FC = () => {
   const location = useLocation();
   const { id } = useParams<{ id: string }>();
   const { currentUser, userProfile, setUserProfile } = useAuth();
-  
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [redemption, setRedemption] = useState<RedemptionResult | Redemption | null>(null);
   const [countdown, setCountdown] = useState<string>('');
   const [confirming, setConfirming] = useState(false);
-  
+
   // Get reward or existing redemption from location state
   const reward = location.state?.reward as Reward;
   const existingRedemption = location.state?.existingRedemption as Redemption;
-  
+
   // Function to fetch redemption details using the ID from the URL
   const fetchRedemptionDetails = async () => {
     if (!currentUser || !id) return;
-    
+
     setLoading(true);
     setError(null);
-    
+
     try {
       // Fetch the redemption directly using its ID
       const redemptionData = await getRedemption(id);
-      
+
       if (redemptionData) {
         console.log('Fetched redemption data on mount/nav back:', redemptionData);
         setRedemption(redemptionData);
@@ -44,7 +44,7 @@ const RedemptionPage: React.FC = () => {
         console.error('No active redemption found for ID:', id);
         setError(t('rewards.errorNoActiveRedemption')); // Consider adding this translation key
         // Optionally navigate away or show reward selection
-        // navigate('/rewards'); 
+        // navigate('/rewards');
       }
     } catch (err) {
       console.error('Error fetching redemption details:', err);
@@ -53,20 +53,20 @@ const RedemptionPage: React.FC = () => {
       setLoading(false);
     }
   };
-  
+
   useEffect(() => {
     if (!currentUser) {
       navigate('/login');
       return;
     }
-    
+
     if (!id) {
       // If no ID in URL (should not happen with current routes), navigate away
       console.error('[RedemptionPage] No ID found in URL params.');
       navigate('/rewards');
       return;
     }
-    
+
     // Check if we are viewing an existing redemption or initiating a new one
     if (id === 'initiate') {
       // Initiating a new redemption - rely on location.state.reward
@@ -92,7 +92,7 @@ const RedemptionPage: React.FC = () => {
     // return () => { /* cleanup logic */ };
 
   }, [currentUser, id, navigate, reward, t]); // Added reward and t to dependency array
-  
+
   // Set up countdown timer for redemptions
   useEffect(() => {
     if (!redemption) {
@@ -128,7 +128,7 @@ const RedemptionPage: React.FC = () => {
       const minutes = Math.floor(diff / (1000 * 60));
       const seconds = Math.floor((diff % (1000 * 60)) / 1000);
       setCountdown(`${minutes}:${seconds < 10 ? '0' : ''}${seconds}`);
-      
+
       // // Previous logic based on type (kept for reference if needed)
       // const isInStore =
       //   ('rewardType' in redemption &&
@@ -137,7 +137,7 @@ const RedemptionPage: React.FC = () => {
 
       // // Calculate and set countdown string
       // if (isInStore) {
-      //   // ... minutes/seconds logic ... 
+      //   // ... minutes/seconds logic ...
       // } else {
       //   // ... days logic ...
       // }
@@ -154,23 +154,23 @@ const RedemptionPage: React.FC = () => {
       clearInterval(interval);
     };
   }, [redemption, t]); // Dependencies: Removed 'reward'
-  
+
   const handleConfirmRedeem = async () => {
     if (!currentUser || !userProfile || !reward || !id) return;
-    
+
     setLoading(true);
     setError(null);
-    
+
     try {
       const result = await redeemReward(currentUser.uid, reward.id, reward.type);
       setRedemption(result);
-      
+
       // Update user profile points
       setUserProfile({
         ...userProfile,
         points: userProfile.points - reward.pointsCost
       });
-      
+
       setConfirming(false);
     } catch (err: any) {
       console.error('Redemption error:', err);
@@ -179,23 +179,23 @@ const RedemptionPage: React.FC = () => {
       setLoading(false);
     }
   };
-  
+
   const handleMarkAsUsed = async () => {
     if (!currentUser) {
       console.error('No current user found');
       return;
     }
-    
+
     if (!redemption) {
       console.error('No redemption found');
       return;
     }
-    
+
     console.log('Redemption object:', redemption);
-    
+
     // Check if we have the redemption ID
     let redemptionId: string;
-    
+
     if ('id' in redemption) {
       // Regular Redemption type
       redemptionId = redemption.id;
@@ -207,10 +207,10 @@ const RedemptionPage: React.FC = () => {
       setError(t('common.errorProcessingRedemption'));
       return;
     }
-    
+
     setLoading(true);
     setError(null);
-    
+
     try {
       console.log('Marking redemption as used with ID:', redemptionId);
       await markRedemptionAsUsed(redemptionId);
@@ -222,17 +222,17 @@ const RedemptionPage: React.FC = () => {
       setLoading(false);
     }
   };
-  
+
   if (!currentUser || !userProfile) {
     return null;
   }
-  
+
   // Step 1: Confirmation screen for redeeming
   if (reward && !redemption && !confirming) {
     return (
-      <Layout 
-        title={t('rewards.redeemReward')} 
-        showBackButton 
+      <Layout
+        title={t('rewards.redeemReward')}
+        showBackButton
         onBack={() => navigate('/rewards')}
       >
         <div className="p-4">
@@ -243,7 +243,7 @@ const RedemptionPage: React.FC = () => {
             <p className="text-gray-600 mb-6">
               {reward.description[userProfile.language]}
             </p>
-            
+
             <div className="border-t border-gray-100 pt-4 mb-6">
               <div className="flex justify-between">
                 <span className="text-gray-600">{t('common.points')}:</span>
@@ -258,13 +258,13 @@ const RedemptionPage: React.FC = () => {
                 <span className="font-medium">{userProfile.points - reward.pointsCost}</span>
               </div>
             </div>
-            
+
             {error && (
               <div className="bg-red-50 text-red-700 p-3 rounded-md mb-4">
                 {error}
               </div>
             )}
-            
+
             <div className="flex space-x-3">
               <button
                 onClick={() => navigate('/rewards')}
@@ -284,34 +284,34 @@ const RedemptionPage: React.FC = () => {
       </Layout>
     );
   }
-  
+
   // Step 2: Final confirmation before redeeming
   if (reward && !redemption && confirming) {
     return (
-      <Layout 
-        title={t('rewards.redeemReward')} 
-        showBackButton 
+      <Layout
+        title={t('rewards.redeemReward')}
+        showBackButton
         onBack={() => setConfirming(false)}
       >
         <div className="p-4">
           <div className="bg-white rounded-lg shadow-md p-6 my-4 text-center">
             <p className="mb-6">
-              {t('rewards.confirmRedeem', { 
-                reward: reward.name[userProfile.language], 
-                points: reward.pointsCost 
+              {t('rewards.confirmRedeem', {
+                reward: reward.name[userProfile.language],
+                points: reward.pointsCost
               })}
             </p>
-            
+
             <div className="text-red-600 text-sm mb-6 bg-red-50 p-3 rounded-md">
               {t('rewards.redemptionWarning')}
             </div>
-            
+
             {error && (
               <div className="bg-red-50 text-red-700 p-3 rounded-md mb-4">
                 {error}
               </div>
             )}
-            
+
             <div className="flex space-x-3">
               <button
                 onClick={() => setConfirming(false)}
@@ -340,13 +340,13 @@ const RedemptionPage: React.FC = () => {
       </Layout>
     );
   }
-  
+
   // Step 3: Redemption result screen - simplified for all reward types
   if (redemption) {
     return (
-      <Layout 
-        title={t('rewards.redemption')} 
-        showBackButton 
+      <Layout
+        title={t('rewards.redemption')}
+        showBackButton
         onBack={() => navigate('/rewards')}
       >
         <div className="p-4">
@@ -358,18 +358,18 @@ const RedemptionPage: React.FC = () => {
               <p className="text-gray-600 mb-6">
                 {'rewardDescription' in redemption ? redemption.rewardDescription : reward?.description[userProfile.language]}
               </p>
-              
+
               <div className="p-4 bg-gray-50 rounded-lg mb-4">
                 {/* Countdown timer */}
                 <div className="text-2xl font-bold text-primary my-3">
                   {countdown}
                 </div>
-                
+
                 <p className="text-sm text-gray-600">
                   {t('rewards.showToStaffInstructions')}
                 </p>
               </div>
-              
+
               <button
                 onClick={handleMarkAsUsed}
                 disabled={loading}
@@ -383,7 +383,7 @@ const RedemptionPage: React.FC = () => {
       </Layout>
     );
   }
-  
+
   // Fallback - shouldn't reach here normally
   return (
     <Layout title={t('rewards.redemption')} showBackButton onBack={() => navigate('/rewards')}>
@@ -394,4 +394,4 @@ const RedemptionPage: React.FC = () => {
   );
 };
 
-export default RedemptionPage; 
+export default RedemptionPage;

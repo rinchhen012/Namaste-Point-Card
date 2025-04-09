@@ -11,29 +11,29 @@ const ScanPage: React.FC = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { currentUser, userProfile, setUserProfile } = useAuth();
-  
+
   const [isScanning, setIsScanning] = useState(true);
   const [isManualEntry, setIsManualEntry] = useState(false);
   const [manualCode, setManualCode] = useState('');
   const [scanResult, setScanResult] = useState<ScanResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
-  
+
   const handleScan = async (code: string) => {
     if (!currentUser) {
       navigate('/login');
       return;
     }
-    
+
     setIsScanning(false);
     setIsProcessing(true);
     setError(null);
-    
+
     try {
       const result = await validateOnlineOrderCode(code, currentUser.uid);
-      
+
       setScanResult(result as ScanResult);
-      
+
       // Update user profile if points were added
       if (result.success && userProfile && result.pointsAdded) {
         setUserProfile({
@@ -48,14 +48,14 @@ const ScanPage: React.FC = () => {
       setIsProcessing(false);
     }
   };
-  
+
   const handleManualSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (manualCode.trim()) {
       handleScan(manualCode.trim());
     }
   };
-  
+
   const resetScan = () => {
     setIsScanning(true);
     setScanResult(null);
@@ -63,27 +63,27 @@ const ScanPage: React.FC = () => {
     setManualCode('');
     setIsManualEntry(false);
   };
-  
+
   return (
-    <Layout 
-      title={t('scan.scanQrCode')} 
-      showBackButton 
+    <Layout
+      title={t('scan.scanQrCode')}
+      showBackButton
       onBack={() => navigate('/')}
     >
       <div className="flex flex-col items-center p-4">
         {isScanning ? (
           <>
             <div className="mb-6 w-full">
-              <QRScanner 
+              <QRScanner
                 onScan={handleScan}
                 onError={(error) => setError(error.message)}
                 onPermissionDenied={() => setError(t('errors.cameraDenied'))}
               />
             </div>
-            
+
             <div className="w-full mb-6">
               <div className="border-t border-gray-200 my-6"></div>
-              
+
               {isManualEntry ? (
                 <form onSubmit={handleManualSubmit} className="w-full">
                   <div className="mb-4">
@@ -126,7 +126,7 @@ const ScanPage: React.FC = () => {
                 </button>
               )}
             </div>
-            
+
             {/* Help Instructions Section */}
             <div className="w-full bg-gray-100 rounded-lg p-4">
               <h2 className="font-semibold mb-2">{t('code.help.title')}</h2>
@@ -188,4 +188,4 @@ const ScanPage: React.FC = () => {
   );
 };
 
-export default ScanPage; 
+export default ScanPage;

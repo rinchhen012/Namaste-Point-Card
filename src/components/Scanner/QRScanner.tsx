@@ -8,10 +8,10 @@ interface QRScannerProps {
   onPermissionDenied?: () => void;
 }
 
-const QRScanner: React.FC<QRScannerProps> = ({ 
-  onScan, 
+const QRScanner: React.FC<QRScannerProps> = ({
+  onScan,
   onError,
-  onPermissionDenied 
+  onPermissionDenied
 }) => {
   const { t } = useTranslation();
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -42,7 +42,7 @@ const QRScanner: React.FC<QRScannerProps> = ({
       })
       .catch((error) => {
         console.error('Scanner error:', error);
-        
+
         if (error.name === 'NotAllowedError') {
           setHasCamera(false);
           if (onPermissionDenied) {
@@ -63,8 +63,8 @@ const QRScanner: React.FC<QRScannerProps> = ({
     <div className="flex flex-col items-center justify-center w-full">
       {hasCamera ? (
         <div className="relative w-full max-w-sm">
-          <video 
-            ref={videoRef} 
+          <video
+            ref={videoRef}
             className="w-full h-full rounded-lg shadow-inner border-2 border-gray-300"
           />
           <div className="absolute inset-0 border-2 border-primary rounded-lg pointer-events-none flex items-center justify-center">
@@ -97,4 +97,4 @@ const QRScanner: React.FC<QRScannerProps> = ({
   );
 };
 
-export default QRScanner; 
+export default QRScanner;

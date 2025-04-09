@@ -1,9 +1,9 @@
 import React, { createContext, useState, useEffect, useContext, ReactNode } from 'react';
-import { 
-  User, 
-  createUserWithEmailAndPassword, 
-  signInWithEmailAndPassword, 
-  signOut, 
+import {
+  User,
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  signOut,
   onAuthStateChanged,
   updateProfile,
   signInWithPopup,
@@ -50,7 +50,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       const userDocRef = doc(db, 'users', user.uid);
       const userDoc = await getDoc(userDocRef);
-      
+
       if (userDoc.exists()) {
         setUserProfile(userDoc.data() as UserProfile);
       } else {
@@ -65,13 +65,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       setCurrentUser(user);
-      
+
       if (user) {
         await fetchUserProfile(user);
       } else {
         setUserProfile(null);
       }
-      
+
       setLoading(false);
     });
 
@@ -94,10 +94,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       const result = await createUserWithEmailAndPassword(auth, email, password);
       const user = result.user;
-      
+
       // Update user profile with display name
       await updateProfile(user, { displayName });
-      
+
       // Create user profile in Firestore
       const userProfile: UserProfile = {
         uid: user.uid,
@@ -108,10 +108,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         phoneNumber: '',
         // No need to set lastQRCheckIn here, will be set on first check-in
       };
-      
+
       await setDoc(doc(db, 'users', user.uid), userProfile);
       setUserProfile(userProfile);
-      
+
       return user;
     } catch (error) {
       console.error('Registration error:', error);
@@ -135,11 +135,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const provider = new GoogleAuthProvider();
       const result = await signInWithPopup(auth, provider);
       const user = result.user;
-      
+
       // Check if user profile exists, create one if not
       const userDocRef = doc(db, 'users', user.uid);
       const userDoc = await getDoc(userDocRef);
-      
+
       if (!userDoc.exists()) {
         const newUserProfile: UserProfile = {
           uid: user.uid,
@@ -150,11 +150,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           phoneNumber: user.phoneNumber || '',
           // No need to set lastQRCheckIn here, will be set on first check-in
         };
-        
+
         await setDoc(userDocRef, newUserProfile);
         setUserProfile(newUserProfile);
       }
-      
+
       return user;
     } catch (error) {
       console.error('Google sign-in error:', error);
@@ -168,14 +168,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const provider = new OAuthProvider('apple.com');
       provider.addScope('email');
       provider.addScope('name');
-      
+
       const result = await signInWithPopup(auth, provider);
       const user = result.user;
-      
+
       // Check if user profile exists, create one if not
       const userDocRef = doc(db, 'users', user.uid);
       const userDoc = await getDoc(userDocRef);
-      
+
       if (!userDoc.exists()) {
         const newUserProfile: UserProfile = {
           uid: user.uid,
@@ -186,11 +186,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           phoneNumber: user.phoneNumber || '',
           // No need to set lastQRCheckIn here, will be set on first check-in
         };
-        
+
         await setDoc(userDocRef, newUserProfile);
         setUserProfile(newUserProfile);
       }
-      
+
       return user;
     } catch (error) {
       console.error('Apple sign-in error:', error);
@@ -215,4 +215,4 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       {!loading && children}
     </AuthContext.Provider>
   );
-}; 
+};

@@ -35,16 +35,16 @@ const AdminRewards: React.FC = () => {
     active: true
   });
   const fileInputRef = useRef<HTMLInputElement>(null);
-  
+
   useEffect(() => {
     loadRewards();
   }, []);
-  
+
   const loadRewards = async () => {
     try {
       setLoading(true);
       setError(null);
-      
+
       const fetchedRewards = await getAllRewardsList();
       setRewards(fetchedRewards);
     } catch (err) {
@@ -54,16 +54,16 @@ const AdminRewards: React.FC = () => {
       setLoading(false);
     }
   };
-  
+
   const handleToggleActive = async (rewardId: string, isCurrentlyActive: boolean) => {
     try {
       await updateExistingReward(rewardId, { active: !isCurrentlyActive });
-      
+
       // Update local state
-      setRewards(prev => 
-        prev.map(reward => 
-          reward.id === rewardId 
-            ? { ...reward, active: !isCurrentlyActive } 
+      setRewards(prev =>
+        prev.map(reward =>
+          reward.id === rewardId
+            ? { ...reward, active: !isCurrentlyActive }
             : reward
         )
       );
@@ -126,24 +126,24 @@ const AdminRewards: React.FC = () => {
 
   const handleDeleteReward = async () => {
     if (!deletingRewardId) return;
-    
+
     try {
       setFormSubmitting(true);
       setError(null);
-      
+
       await deleteExistingReward(deletingRewardId);
-      
+
       // Remove reward from local state
       setRewards(prev => prev.filter(reward => reward.id !== deletingRewardId));
-      
+
       // Close confirmation modal & reset state
       closeDeleteConfirm();
-      
+
     } catch (err) {
       console.error('Error deleting reward:', err);
       setError('Failed to delete reward. Please check if it is linked to any redemptions.');
       // Ensure deleting state is cleared even on error
-      closeDeleteConfirm(); 
+      closeDeleteConfirm();
     } finally {
       setFormSubmitting(false);
     }
@@ -151,7 +151,7 @@ const AdminRewards: React.FC = () => {
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value, type } = e.target;
-    
+
     if (type === 'number') {
       setFormData(prev => ({
         ...prev,
@@ -184,32 +184,32 @@ const AdminRewards: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     try {
       setFormSubmitting(true);
       setError(null);
-      
+
       const { imageFile, imageUrl, ...rewardData } = formData;
-      
+
       // Upload image if provided
       let newImageUrl = imageUrl || '';
       if (imageFile) {
         newImageUrl = await uploadRewardImage(imageFile);
       }
-      
+
       // Create new reward
       const newReward = await createNewReward({
         ...rewardData,
         imageUrl: newImageUrl,
         createdAt: new Date() // Ensure createdAt is set
       });
-      
+
       // Add new reward to the list
       setRewards(prev => [newReward, ...prev]);
-      
+
       // Close modal
       closeModal();
-      
+
     } catch (err) {
       console.error('Error creating reward:', err);
       setError('Failed to create reward. Please try again.');
@@ -220,42 +220,42 @@ const AdminRewards: React.FC = () => {
 
   const handleEditSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!editingRewardId) return;
-    
+
     try {
       setFormSubmitting(true);
       setError(null);
-      
+
       const { imageFile, imageUrl, ...rewardData } = formData;
-      
+
       // Upload image if provided
       let newImageUrl = imageUrl || '';
       if (imageFile) {
         newImageUrl = await uploadRewardImage(imageFile, editingRewardId);
       }
-      
+
       // Prepare update data
       const updateData = {
         ...rewardData,
         imageUrl: newImageUrl
       };
-      
+
       // Update reward
       await updateExistingReward(editingRewardId, updateData);
-      
+
       // Update local state
-      setRewards(prev => 
-        prev.map(reward => 
-          reward.id === editingRewardId 
+      setRewards(prev =>
+        prev.map(reward =>
+          reward.id === editingRewardId
             ? { ...reward, ...updateData }
             : reward
         )
       );
-      
+
       // Close modal
       closeEditModal();
-      
+
     } catch (err) {
       console.error('Error updating reward:', err);
       setError('Failed to update reward. Please try again.');
@@ -269,20 +269,20 @@ const AdminRewards: React.FC = () => {
     <div className="container mx-auto px-4 py-6">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-semibold text-gray-800">Rewards Management</h1>
-        <button 
+        <button
           className="px-4 py-2 bg-orange-500 text-white rounded hover:bg-orange-600"
           onClick={openModal}
         >
           Add New Reward
         </button>
       </div>
-      
+
       {error && (
         <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
           {error}
         </div>
       )}
-      
+
       {loading ? (
         <div className="flex justify-center items-center py-8">
           <div className="animate-spin rounded-full h-12 w-12 border-4 border-orange-500 border-t-transparent"></div>
@@ -293,9 +293,9 @@ const AdminRewards: React.FC = () => {
             <div key={reward.id} className="bg-white rounded-lg shadow-md overflow-hidden flex flex-col">
               {reward.imageUrl && (
                 <div className="w-full h-40 bg-gray-200 flex-shrink-0">
-                  <img 
-                    src={reward.imageUrl} 
-                    alt={reward.name} 
+                  <img
+                    src={reward.imageUrl}
+                    alt={reward.name}
                     className="w-full h-full object-cover"
                   />
                 </div>
@@ -304,8 +304,8 @@ const AdminRewards: React.FC = () => {
                 <div className="flex justify-between items-start mb-2">
                   <h2 className="text-lg font-semibold text-gray-800 flex-1 mr-2">{reward.name}</h2>
                   <span className={`flex-shrink-0 px-2 py-1 text-xs rounded-full ${
-                    reward.active 
-                      ? 'bg-green-100 text-green-800' 
+                    reward.active
+                      ? 'bg-green-100 text-green-800'
                       : 'bg-gray-100 text-gray-800'
                   }`}>
                     {reward.active ? 'Active' : 'Inactive'}
@@ -318,21 +318,21 @@ const AdminRewards: React.FC = () => {
               <div className="px-4 py-3 bg-gray-50 border-t border-gray-200 flex justify-between items-center mt-auto">
                 <span className="font-bold text-orange-600">{reward.points} pts</span>
                 <div className="space-x-2 flex items-center">
-                  <button 
+                  <button
                     onClick={() => handleToggleActive(reward.id, reward.active)}
                     className="px-3 py-1 text-xs rounded hover:bg-blue-100 text-blue-700"
                     title={reward.active ? 'Deactivate Reward' : 'Activate Reward'}
                   >
                     {reward.active ? 'Deactivate' : 'Activate'}
                   </button>
-                  <button 
+                  <button
                     onClick={() => openEditModal(reward)}
                     className="px-3 py-1 text-xs rounded hover:bg-gray-200 text-gray-700"
                     title="Edit Reward"
                   >
                     Edit
                   </button>
-                  <button 
+                  <button
                     onClick={() => openDeleteConfirm(reward.id, reward.name)}
                     className="px-3 py-1 text-xs rounded hover:bg-red-100 text-red-700"
                     title="Delete Reward"
@@ -343,7 +343,7 @@ const AdminRewards: React.FC = () => {
               </div>
             </div>
           ))}
-          
+
           {rewards.length === 0 && !loading && (
             <div className="col-span-full text-center py-8 text-gray-500">
               No rewards found. Create your first reward!
@@ -357,7 +357,7 @@ const AdminRewards: React.FC = () => {
           <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-center p-6 border-b">
               <h2 className="text-xl font-semibold text-gray-800">Add New Reward</h2>
-              <button 
+              <button
                 onClick={closeModal}
                 className="text-gray-500 hover:text-gray-700"
               >
@@ -366,7 +366,7 @@ const AdminRewards: React.FC = () => {
                 </svg>
               </button>
             </div>
-            
+
             <form onSubmit={handleSubmit} className="p-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                 <div>
@@ -383,7 +383,7 @@ const AdminRewards: React.FC = () => {
                     required
                   />
                 </div>
-                
+
                 <div>
                   <label htmlFor="nameJa" className="block text-sm font-medium text-gray-700 mb-1">
                     Name (Japanese)
@@ -515,7 +515,7 @@ const AdminRewards: React.FC = () => {
           <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-center p-6 border-b">
               <h2 className="text-xl font-semibold text-gray-800">Edit Reward</h2>
-              <button 
+              <button
                 onClick={closeEditModal}
                 className="text-gray-500 hover:text-gray-700"
               >
@@ -524,7 +524,7 @@ const AdminRewards: React.FC = () => {
                 </svg>
               </button>
             </div>
-            
+
             <form onSubmit={handleEditSubmit} className="p-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                 <div>
@@ -541,7 +541,7 @@ const AdminRewards: React.FC = () => {
                     required
                   />
                 </div>
-                
+
                 <div>
                   <label htmlFor="edit-nameJa" className="block text-sm font-medium text-gray-700 mb-1">
                     Name (Japanese)
@@ -610,14 +610,14 @@ const AdminRewards: React.FC = () => {
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Current Image
                     </label>
-                    <img 
-                      src={formData.imageUrl} 
-                      alt="Current reward" 
+                    <img
+                      src={formData.imageUrl}
+                      alt="Current reward"
                       className="h-32 object-cover rounded border border-gray-300"
                     />
                   </div>
                 )}
-                
+
                 <label htmlFor="edit-imageFile" className="block text-sm font-medium text-gray-700 mb-1">
                   Change Reward Image
                 </label>
@@ -680,8 +680,8 @@ const AdminRewards: React.FC = () => {
           </div>
         </div>
       )}
-      
-      <ConfirmationModal 
+
+      <ConfirmationModal
         isOpen={showDeleteConfirm}
         onClose={closeDeleteConfirm}
         onConfirm={handleDeleteReward}
@@ -695,4 +695,4 @@ const AdminRewards: React.FC = () => {
   );
 };
 
-export default AdminRewards; 
+export default AdminRewards;

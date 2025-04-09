@@ -125,4 +125,4 @@ export function unregister(): void {
         console.error(error.message);
       });
   }
-} 
+}

@@ -26,7 +26,7 @@ const AdminDashboard: React.FC = () => {
     const fetchDashboardData = async () => {
       try {
         setLoading(true);
-        
+
         // In development mode, use mock data
         if (import.meta.env.DEV && import.meta.env.VITE_USE_MOCK_AUTH === 'true') {
           // Mock data for development
@@ -38,7 +38,7 @@ const AdminDashboard: React.FC = () => {
             pointsIssued: 289,
             pointsRedeemed: 152
           });
-          
+
           setRecentOrders([
             {
               id: 'order1',
@@ -61,25 +61,25 @@ const AdminDashboard: React.FC = () => {
               timestamp: new Date(Date.now() - 8 * 60 * 60 * 1000)
             }
           ]);
-          
+
           setLoading(false);
           return;
         }
-        
+
         // For production, fetch real data
         const statsData = await getStatsData();
         setStats(statsData as DashboardStats);
-        
+
         const orders = await getRecentOrders();
         setRecentOrders(orders);
-        
+
         setLoading(false);
       } catch (error) {
         console.error('Error fetching dashboard data:', error);
         setLoading(false);
       }
     };
-    
+
     fetchDashboardData();
   }, []);
 
@@ -97,7 +97,7 @@ const AdminDashboard: React.FC = () => {
   return (
     <>
       <h2 className="text-2xl font-semibold mb-6">Dashboard</h2>
-      
+
       {loading ? (
         <div className="flex justify-center items-center h-64">
           <div className="animate-spin rounded-full h-12 w-12 border-4 border-orange-600 border-t-transparent"></div>
@@ -111,24 +111,24 @@ const AdminDashboard: React.FC = () => {
               <p className="text-3xl font-bold">{stats.totalUsers}</p>
               <p className="text-sm text-gray-500 mt-2">{stats.activeUsers} active in last 30 days</p>
             </div>
-            
+
             <div className="bg-white rounded-lg shadow-md p-6">
               <h3 className="text-lg font-medium text-gray-500 mb-2">Points</h3>
               <p className="text-3xl font-bold">{stats.pointsIssued}</p>
               <p className="text-sm text-gray-500 mt-2">{stats.pointsRedeemed} redeemed</p>
             </div>
-            
+
             <div className="bg-white rounded-lg shadow-md p-6">
               <h3 className="text-lg font-medium text-gray-500 mb-2">Redemptions</h3>
               <p className="text-3xl font-bold">{stats.totalRedemptions}</p>
               <p className="text-sm text-gray-500 mt-2">From {stats.totalRewards} rewards</p>
             </div>
           </div>
-          
+
           {/* Recent Activity */}
           <div className="bg-white rounded-lg shadow-md p-6">
             <h3 className="text-lg font-medium mb-4">Recent Activity</h3>
-            
+
             <div className="overflow-x-auto">
               <table className="min-w-full">
                 <thead className="bg-gray-50">
@@ -155,8 +155,8 @@ const AdminDashboard: React.FC = () => {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                          order.type === 'delivery_order' 
-                            ? 'bg-blue-100 text-blue-800' 
+                          order.type === 'delivery_order'
+                            ? 'bg-blue-100 text-blue-800'
                             : 'bg-green-100 text-green-800'
                         }`}>
                           {order.type === 'delivery_order' ? 'Delivery Order' : 'In-Store Visit'}
@@ -180,4 +180,4 @@ const AdminDashboard: React.FC = () => {
   );
 };
 
-export default AdminDashboard; 
+export default AdminDashboard;

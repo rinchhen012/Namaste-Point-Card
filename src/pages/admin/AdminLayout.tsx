@@ -31,13 +31,13 @@ const AdminLayout: React.FC = () => {
           </div>
 
           <div className="flex items-center">
-            <button 
+            <button
               onClick={handleLogout}
               className="text-white hover:text-orange-200 mr-4 text-sm"
             >
               Logout
             </button>
-            <button 
+            <button
               onClick={toggleMenu}
               className="text-white focus:outline-none md:hidden"
             >
@@ -51,7 +51,7 @@ const AdminLayout: React.FC = () => {
 
       <div className="flex flex-1">
         {/* Sidebar */}
-        <aside 
+        <aside
           className={`bg-white shadow-md w-64 fixed md:relative inset-y-0 left-0 transform ${
             menuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
           } transition-transform duration-300 ease-in-out md:flex flex-col z-10 h-screen md:h-auto`}
@@ -126,4 +126,4 @@ const AdminLayout: React.FC = () => {
   );
 };
 
-export default AdminLayout; 
+export default AdminLayout;

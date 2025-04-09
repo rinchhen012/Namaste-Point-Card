@@ -11,17 +11,17 @@ const RedemptionHistoryPage: React.FC = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { currentUser, userProfile } = useAuth();
-  
+
   const [redemptions, setRedemptions] = useState<Redemption[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  
+
   useEffect(() => {
     if (!currentUser) {
       navigate('/login');
       return;
     }
-    
+
     const loadRedemptionHistory = async () => {
       try {
         setLoading(true);
@@ -34,14 +34,14 @@ const RedemptionHistoryPage: React.FC = () => {
         setLoading(false);
       }
     };
-    
+
     loadRedemptionHistory();
   }, [currentUser, navigate, t]);
-  
+
   // Function to render the status badge based on expiry and usage
   const renderStatusBadge = (redemption: Redemption) => {
     const expired = isDateExpired(redemption.expiresAt);
-    
+
     if (redemption.used) {
       return (
         <span className="px-2 py-1 text-xs font-semibold rounded-full bg-gray-200 text-gray-700">
@@ -62,7 +62,7 @@ const RedemptionHistoryPage: React.FC = () => {
       );
     }
   };
-  
+
   const handleViewRedemption = (redemption: Redemption) => {
     // Only allow viewing active redemptions
     const expired = isDateExpired(redemption.expiresAt);
@@ -72,16 +72,20 @@ const RedemptionHistoryPage: React.FC = () => {
       });
     }
   };
-  
+
   return (
-    <Layout title={t('rewards.redemptionHistory')}>
+    <Layout
+      title={t('rewards.redemptionHistory')}
+      showBackButton
+      onBack={() => navigate(-1)}
+    >
       <div className="p-4">
         {error && (
           <div className="bg-red-50 text-red-700 p-3 rounded-md mb-4">
             {error}
           </div>
         )}
-        
+
         {loading ? (
           <div className="flex justify-center items-center h-64">
             <div className="animate-spin rounded-full h-8 w-8 border-4 border-primary border-t-transparent"></div>
@@ -101,17 +105,17 @@ const RedemptionHistoryPage: React.FC = () => {
             <h2 className="text-lg font-semibold text-gray-800 mb-2">
               {t('rewards.yourRedemptionHistory')}
             </h2>
-            
+
             {redemptions.map(redemption => {
               console.log(`Rendering history item, Redemption ID: ${redemption.id}, Reward Name: ${redemption.rewardName}`);
               return (
-                <div 
+                <div
                   key={redemption.id}
                   className={`bg-white rounded-lg shadow-md p-4 border-l-4 ${
-                    redemption.used 
-                      ? 'border-gray-300' 
+                    redemption.used
+                      ? 'border-gray-300'
                       : isDateExpired(redemption.expiresAt)
-                        ? 'border-red-300' 
+                        ? 'border-red-300'
                         : 'border-green-400 cursor-pointer'
                   }`}
                   onClick={() => !redemption.used && !isDateExpired(redemption.expiresAt) && handleViewRedemption(redemption)}
@@ -122,7 +126,7 @@ const RedemptionHistoryPage: React.FC = () => {
                     </h3>
                     {renderStatusBadge(redemption)}
                   </div>
-                  
+
                   <div className="flex justify-between text-xs text-gray-500">
                     <div>
                       {t('rewards.redeemed')}: {formatDate(redemption.createdAt)}
@@ -141,4 +145,4 @@ const RedemptionHistoryPage: React.FC = () => {
   );
 };
 
-export default RedemptionHistoryPage; 
+export default RedemptionHistoryPage;

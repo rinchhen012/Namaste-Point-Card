@@ -1,11 +1,11 @@
-import { 
-  collection, 
-  query, 
-  where, 
-  orderBy, 
-  getDocs, 
-  doc, 
-  getDoc, 
+import {
+  collection,
+  query,
+  where,
+  orderBy,
+  getDocs,
+  doc,
+  getDoc,
   updateDoc,
   addDoc,
   deleteDoc,
@@ -31,36 +31,36 @@ export const getStatsData = async () => {
       pointsRedeemed: 152
     };
   }
-  
+
   try {
     // Count total users
     const usersRef = collection(db, 'users');
     const usersSnapshot = await getDocs(usersRef);
     const totalUsers = usersSnapshot.size;
-    
+
     // Count active users in the last 30 days
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-    
+
     const activeUsersQuery = query(
-      usersRef, 
+      usersRef,
       where('lastVisitScan', '>=', Timestamp.fromDate(thirtyDaysAgo))
     );
     const activeUsersSnapshot = await getDocs(activeUsersQuery);
     const activeUsers = activeUsersSnapshot.size;
-    
+
     // Count rewards and redemptions
     const rewardsRef = collection(db, 'rewards');
     const rewardsSnapshot = await getDocs(rewardsRef);
     const totalRewards = rewardsSnapshot.size;
-    
+
     const redemptionsRef = collection(db, 'redemptions');
     const redemptionsSnapshot = await getDocs(redemptionsRef);
     const totalRedemptions = redemptionsSnapshot.size;
-    
+
     // Calculate points
     const pointsHistoryRef = collection(db, 'points_history');
-    
+
     const earnedPointsQuery = query(
       pointsHistoryRef,
       where('type', '==', 'earn')
@@ -69,21 +69,21 @@ export const getStatsData = async () => {
       pointsHistoryRef,
       where('type', '==', 'redeem')
     );
-    
+
     const earnedPointsSnapshot = await getDocs(earnedPointsQuery);
     const redeemedPointsSnapshot = await getDocs(redeemedPointsQuery);
-    
+
     let pointsIssued = 0;
     let pointsRedeemed = 0;
-    
+
     earnedPointsSnapshot.forEach(doc => {
       pointsIssued += doc.data().points;
     });
-    
+
     redeemedPointsSnapshot.forEach(doc => {
       pointsRedeemed += Math.abs(doc.data().points);
     });
-    
+
     return {
       totalUsers,
       activeUsers,
@@ -124,7 +124,7 @@ export const getRecentOrders = async (limitCount = 10) => {
       }
     ];
   }
-  
+
   try {
     const ordersRef = collection(db, 'points_history');
     const ordersQuery = query(
@@ -133,18 +133,18 @@ export const getRecentOrders = async (limitCount = 10) => {
       orderBy('timestamp', 'desc'),
       firestoreLimit(limitCount)
     );
-    
+
     const snapshot = await getDocs(ordersQuery);
     const orders: any[] = [];
-    
+
     for (const docSnapshot of snapshot.docs) {
       const data = docSnapshot.data();
-      
+
       // Get user name from user id
       const userRef = doc(db, 'users', data.userId);
       const userSnap = await getDoc(userRef);
       const userData = userSnap.data();
-      
+
       orders.push({
         id: docSnapshot.id,
         userName: userData?.displayName || 'Unknown User',
@@ -153,7 +153,7 @@ export const getRecentOrders = async (limitCount = 10) => {
         timestamp: data.timestamp.toDate()
       });
     }
-    
+
     return orders;
   } catch (error) {
     console.error('Error getting recent orders:', error);
@@ -169,10 +169,10 @@ export const getCoupons = async () => {
       couponsRef,
       orderBy('createdAt', 'desc')
     );
-    
+
     const snapshot = await getDocs(couponsQuery);
     const coupons: any[] = [];
-    
+
     snapshot.forEach(doc => {
       const data = doc.data();
       coupons.push({
@@ -185,7 +185,7 @@ export const getCoupons = async () => {
         usedAt: data.usedAt ? data.usedAt.toDate() : null
       });
     });
-    
+
     return coupons;
   } catch (error) {
     console.error('Error getting coupons:', error);
@@ -194,26 +194,26 @@ export const getCoupons = async () => {
 };
 
 export const createCoupon = async (
-  codePrefix: string, 
-  count: number, 
-  expiryDays: number, 
+  codePrefix: string,
+  count: number,
+  expiryDays: number,
   generateRandomCodes: boolean
 ) => {
   try {
     const batch = [];
-    
+
     for (let i = 0; i < count; i++) {
       // Generate a random code if enabled
-      const randomString = generateRandomCodes 
+      const randomString = generateRandomCodes
         ? Math.random().toString(36).substring(2, 7).toUpperCase()
         : (i + 1).toString().padStart(5, '0');
-        
+
       const code = `${codePrefix}-${randomString}`;
-      
+
       // Calculate expiry date
       const expiryDate = new Date();
       expiryDate.setDate(expiryDate.getDate() + expiryDays);
-      
+
       // Create coupon document
       const couponData = {
         code,
@@ -221,14 +221,14 @@ export const createCoupon = async (
         createdAt: serverTimestamp(),
         expiresAt: Timestamp.fromDate(expiryDate)
       };
-      
+
       // Add to batch
       batch.push(addDoc(collection(db, 'delivery_coupons'), couponData));
     }
-    
+
     // Execute all adds
     await Promise.all(batch);
-    
+
     return {
       success: true,
       count
@@ -246,7 +246,7 @@ export const deactivateCoupon = async (couponId: string) => {
     await updateDoc(couponRef, {
       expiresAt: Timestamp.now()
     });
-    
+
     return {
       success: true
     };
@@ -263,12 +263,12 @@ export const deactivateCoupon = async (couponId: string) => {
  * Get paginated list of users
  */
 export async function getUsersList(
-  limitCount: number = 20, 
+  limitCount: number = 20,
   startAfterUser?: UserProfile
 ): Promise<{ users: UserProfile[], hasMore: boolean }> {
   try {
     let usersQuery;
-    
+
     if (import.meta.env.DEV && import.meta.env.VITE_USE_MOCK_AUTH === 'true') {
       // Return mock data for development
       return {
@@ -301,13 +301,13 @@ export async function getUsersList(
         hasMore: false
       };
     }
-    
+
     const usersRef = collection(db, 'users');
-    
+
     if (startAfterUser) {
       const lastDocRef = doc(db, 'users', startAfterUser.uid);
       const lastDocSnapshot = await getDoc(lastDocRef);
-      
+
       usersQuery = query(
         usersRef,
         orderBy('createdAt', 'desc'),
@@ -321,10 +321,10 @@ export async function getUsersList(
         firestoreLimit(limitCount + 1)
       );
     }
-    
+
     const snapshot = await getDocs(usersQuery);
     const users: UserProfile[] = [];
-    
+
     snapshot.docs.slice(0, limitCount).forEach(doc => {
       const data = doc.data();
       users.push({
@@ -336,9 +336,9 @@ export async function getUsersList(
         createdAt: data.createdAt
       });
     });
-    
+
     const hasMore = snapshot.docs.length > limitCount;
-    
+
     return { users, hasMore };
   } catch (error) {
     console.error('Error getting users:', error);
@@ -365,8 +365,8 @@ export async function setUserAsAdmin(userId: string, isAdmin: boolean): Promise<
  * Adjust user points and record the transaction
  */
 export async function adjustUserPoints(
-  userId: string, 
-  points: number, 
+  userId: string,
+  points: number,
   adminId: string,
   note: string
 ): Promise<void> {
@@ -385,20 +385,20 @@ export async function adjustUserPoints(
     // Get current user data
     const userRef = doc(db, 'users', userId);
     const userSnap = await getDoc(userRef);
-    
+
     if (!userSnap.exists()) {
       throw new Error('User not found');
     }
-    
+
     const userData = userSnap.data();
     const currentPoints = userData.points || 0;
     const newPoints = currentPoints + points;
-    
+
     // Update user points
     await updateDoc(userRef, {
       points: newPoints
     });
-    
+
     // Record transaction in points_history
     await addDoc(collection(db, 'points_history'), {
       userId,
@@ -447,12 +447,12 @@ export async function getAllRewardsList(): Promise<Reward[]> {
         }
       ];
     }
-    
+
     const rewardsRef = collection(db, 'rewards');
     const snapshot = await getDocs(rewardsRef);
-    
+
     const rewards: Reward[] = [];
-    
+
     snapshot.forEach(doc => {
       const data = doc.data();
       rewards.push({
@@ -466,7 +466,7 @@ export async function getAllRewardsList(): Promise<Reward[]> {
         imageUrl: data.imageUrl || ''
       });
     });
-    
+
     return rewards;
   } catch (error) {
     console.error('Error getting rewards:', error);
@@ -480,7 +480,7 @@ export async function getAllRewardsList(): Promise<Reward[]> {
 export async function createNewReward(rewardData: Omit<Reward, 'id'>): Promise<Reward> {
   try {
     const docRef = await addDoc(collection(db, 'rewards'), rewardData);
-    
+
     // Return the full reward object with the id
     return {
       id: docRef.id,
@@ -524,10 +524,10 @@ export async function deleteExistingReward(rewardId: string): Promise<void> {
 export async function uploadRewardImage(file: File, rewardId?: string): Promise<string> {
   try {
     // If rewardId is not provided (new reward), use a timestamp
-    const path = rewardId 
+    const path = rewardId
       ? `rewards/${rewardId}/${file.name}`
       : `rewards/new_${Date.now()}_${file.name}`;
-    
+
     const storageRef = ref(storage, path);
     await uploadBytes(storageRef, file);
     const downloadUrl = await getDownloadURL(storageRef);
@@ -572,14 +572,14 @@ export async function getOnlineOrderCodes(
         }
       ];
     }
-    
+
     const codesRef = collection(db, 'unique_order_codes');
     let codesQuery = query(codesRef, orderBy('createdAt', 'desc'), firestoreLimit(limitCount));
-    
+
     if (filters.used !== undefined) {
       codesQuery = query(codesQuery, where('used', '==', filters.used));
     }
-    
+
     if (filters.prefix) {
       // This is a startsWith query, which requires a compound index
       const endPrefix = filters.prefix.slice(0, -1) + String.fromCharCode(filters.prefix.charCodeAt(filters.prefix.length - 1) + 1);
@@ -589,11 +589,11 @@ export async function getOnlineOrderCodes(
         where('code', '<', endPrefix)
       );
     }
-    
+
     const snapshot = await getDocs(codesQuery);
-    
+
     const codes: OnlineOrderCode[] = [];
-    
+
     snapshot.forEach(doc => {
       const data = doc.data();
       codes.push({
@@ -607,7 +607,7 @@ export async function getOnlineOrderCodes(
         usedAt: data.usedAt ? data.usedAt.toDate() : undefined
       });
     });
-    
+
     return codes;
   } catch (error) {
     console.error('Error getting online order codes:', error);
@@ -619,7 +619,7 @@ export async function getOnlineOrderCodes(
  * Generate online order codes
  */
 export async function generateNewOnlineOrderCodes(
-  count: number, 
+  count: number,
   prefix: string,
   pointsAwarded: number,
   expiryDays: number
@@ -629,11 +629,11 @@ export async function generateNewOnlineOrderCodes(
     const generateFunction = httpsCallable(functions, 'generateOnlineOrderCodes');
     const result = await generateFunction({ count, prefix, pointsAwarded, expiryDays });
     const data = result.data as { success: boolean; codes: string[] };
-    
+
     if (!data.success) {
       throw new Error('Failed to generate codes');
     }
-    
+
     return data.codes;
   } catch (error) {
     console.error('Error generating online order codes:', error);
@@ -650,11 +650,11 @@ export async function invalidateOnlineOrderCode(code: string): Promise<void> {
     const codesRef = collection(db, 'unique_order_codes');
     const codeQuery = query(codesRef, where('code', '==', code));
     const snapshot = await getDocs(codeQuery);
-    
+
     if (snapshot.empty) {
       throw new Error('Code not found');
     }
-    
+
     // Update the expiry to now (makes it invalid)
     const codeDoc = snapshot.docs[0];
     await updateDoc(codeDoc.ref, {
@@ -685,4 +685,4 @@ export async function getDashboardStats(): Promise<{
     console.error('Error getting dashboard stats:', error);
     throw error;
   }
-} 
+}

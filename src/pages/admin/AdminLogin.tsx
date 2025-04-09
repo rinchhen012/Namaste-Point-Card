@@ -10,30 +10,30 @@ const AdminLogin: React.FC = () => {
   const { adminLogin, isAdminAuthenticated, adminAuthLoading } = useAdminAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  
+
   // Get the path to redirect to after login
   const from = location.state?.from?.pathname || '/';
-  
+
   // If admin is already authenticated, redirect to the admin dashboard
   useEffect(() => {
     if (isAdminAuthenticated && !adminAuthLoading) {
       navigate(from, { replace: true });
     }
   }, [isAdminAuthenticated, adminAuthLoading, navigate, from]);
-  
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    
+
     if (!email.trim() || !password.trim()) {
       setError('Email and password are required');
       return;
     }
-    
+
     try {
       setIsLoading(true);
       const success = await adminLogin(email, password);
-      
+
       if (!success) {
         setError('Invalid credentials or not an admin user');
       }
@@ -44,7 +44,7 @@ const AdminLogin: React.FC = () => {
       setIsLoading(false);
     }
   };
-  
+
   if (adminAuthLoading && !isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gray-100">
@@ -54,7 +54,7 @@ const AdminLogin: React.FC = () => {
       </div>
     );
   }
-  
+
   return (
     <div className="flex items-center justify-center min-h-screen bg-gray-100">
       <div className="w-full max-w-md p-8 space-y-8 bg-white rounded-lg shadow-md">
@@ -64,14 +64,14 @@ const AdminLogin: React.FC = () => {
             Enter your admin credentials
           </p>
         </div>
-        
+
         <form className="mt-8 space-y-6" onSubmit={handleLogin}>
           {error && (
             <div className="p-3 text-sm text-red-700 bg-red-100 rounded-md">
               {error}
             </div>
           )}
-          
+
           <div>
             <label htmlFor="email" className="block text-sm font-medium text-gray-700">
               Email
@@ -87,7 +87,7 @@ const AdminLogin: React.FC = () => {
               className="block w-full px-3 py-2 mt-1 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-orange-500 focus:border-orange-500"
             />
           </div>
-          
+
           <div>
             <label htmlFor="password" className="block text-sm font-medium text-gray-700">
               Password
@@ -103,7 +103,7 @@ const AdminLogin: React.FC = () => {
               className="block w-full px-3 py-2 mt-1 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-orange-500 focus:border-orange-500"
             />
           </div>
-          
+
           <div>
             <button
               type="submit"
@@ -124,14 +124,14 @@ const AdminLogin: React.FC = () => {
             </button>
           </div>
         </form>
-        
+
         {import.meta.env.DEV && (
           <div className="text-center text-xs text-gray-500 mt-4 p-3 bg-gray-100 rounded">
             <p><strong>Development Mode</strong></p>
             <p>Use admin@namaste.com / admin123 to log in</p>
           </div>
         )}
-        
+
         <div className="text-center text-xs text-gray-500 mt-4">
           <p>
             This is the admin area. Unauthorized access is prohibited.
@@ -142,4 +142,4 @@ const AdminLogin: React.FC = () => {
   );
 };
 
-export default AdminLogin; 
+export default AdminLogin;

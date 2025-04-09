@@ -16,21 +16,21 @@ const InStorePage: React.FC = () => {
   const navigate = useNavigate();
   const { currentUser, userProfile, setUserProfile } = useAuth();
   const { getPosition, error: geoError } = useGeolocation();
-  
+
   const [isScanning, setIsScanning] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(false);
   const [hasCheckedInToday, setHasCheckedInToday] = useState<boolean>(false);
   const [successMessage, setSuccessMessage] = useState<string>('');
-  
+
   useEffect(() => {
     // Check if user has already checked in today
     if (userProfile && userProfile.lastQRCheckIn) {
       const lastScan = userProfile.lastQRCheckIn.timestamp as Timestamp;
       const lastScanDate = lastScan.toDate();
       const today = new Date();
-      
+
       // Check if the last scan was within the last 22 hours
       const hoursSinceLastScan = (today.getTime() - lastScanDate.getTime()) / (1000 * 60 * 60);
       if (hoursSinceLastScan < 22) {
@@ -38,32 +38,32 @@ const InStorePage: React.FC = () => {
       }
     }
   }, [userProfile]);
-  
+
   const handleQRValidation = async (qrCode: string) => {
     if (!currentUser) {
       navigate('/login');
       return;
     }
-    
+
     setLoading(true);
     setError(null);
-    
+
     try {
       // Get current position
       const position = await getPosition();
-      
+
       // Call the validateQRCheckIn function with QR code and location
       const result = await validateQRCheckIn(
-        currentUser.uid, 
-        qrCode, 
-        position.latitude, 
+        currentUser.uid,
+        qrCode,
+        position.latitude,
         position.longitude
       );
-      
+
       if (result.success) {
         setSuccess(true);
         setSuccessMessage(result.message || t('inStore.successfulCheckIn'));
-        
+
         // Update user profile
         if (userProfile) {
           setUserProfile({
@@ -85,25 +85,25 @@ const InStorePage: React.FC = () => {
       setLoading(false);
     }
   };
-  
+
   const handleScan = (code: string) => {
     setIsScanning(false);
-    
+
     // Check if the QR code matches any of our valid restaurant QR codes
     // Valid QR codes should be in the format "NAMASTE-{LOCATION}-MAIN"
     const validQRPattern = /^NAMASTE-[A-Z]+-MAIN$/;
-    
+
     if (validQRPattern.test(code)) {
       handleQRValidation(code);
     } else {
       setError(t('scan.invalidCode'));
     }
   };
-  
+
   return (
-    <Layout 
-      title={t('inStore.checkIn')} 
-      showBackButton 
+    <Layout
+      title={t('inStore.checkIn')}
+      showBackButton
       onBack={() => navigate('/')}
     >
       <div className="flex flex-col items-center p-4">
@@ -132,7 +132,7 @@ const InStorePage: React.FC = () => {
         ) : isScanning ? (
           <div className="w-full">
             <p className="mb-4 text-center">{t('scan.alignQrCode')}</p>
-            <QRScanner 
+            <QRScanner
               onScan={handleScan}
               onError={(error) => setError(error.message)}
               onPermissionDenied={() => setError(t('errors.cameraDenied'))}
@@ -164,19 +164,19 @@ const InStorePage: React.FC = () => {
               <p className="text-gray-600 mb-6">
                 {t('inStore.scanQRInstructions')}
               </p>
-              
+
               {error && (
                 <div className="bg-red-50 text-red-700 p-3 rounded-md mb-4">
                   {error}
                 </div>
               )}
-              
+
               {geoError && (
                 <div className="bg-red-50 text-red-700 p-3 rounded-md mb-4">
                   {t('inStore.locationRequired')}
                 </div>
               )}
-              
+
               <button
                 onClick={() => setIsScanning(true)}
                 disabled={loading}
@@ -192,7 +192,7 @@ const InStorePage: React.FC = () => {
                 )}
               </button>
             </div>
-            
+
             <div className="bg-white rounded-lg shadow-md p-4">
               <h4 className="font-medium mb-2">{t('info.howItWorks')}</h4>
               <div className="text-sm text-gray-600 space-y-2">
@@ -209,4 +209,4 @@ const InStorePage: React.FC = () => {
   );
 };
 
-export default InStorePage; 
+export default InStorePage;

@@ -7,31 +7,31 @@ import { registerUser, signInWithGoogle, signInWithApple } from '../firebase/ser
 const RegisterPage: React.FC = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  
+
   const [displayName, setDisplayName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  
+
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    
+
     // Validate form
     if (password !== confirmPassword) {
       setError(t('auth.errors.passwordsDoNotMatch'));
       return;
     }
-    
+
     if (password.length < 6) {
       setError(t('auth.errors.passwordTooShort'));
       return;
     }
-    
+
     setLoading(true);
-    
+
     try {
       await registerUser(email, password, displayName);
       navigate('/');
@@ -46,11 +46,11 @@ const RegisterPage: React.FC = () => {
       setLoading(false);
     }
   };
-  
+
   const handleGoogleSignIn = async () => {
     setError(null);
     setLoading(true);
-    
+
     try {
       await signInWithGoogle();
       navigate('/');
@@ -61,11 +61,11 @@ const RegisterPage: React.FC = () => {
       setLoading(false);
     }
   };
-  
+
   const handleAppleSignIn = async () => {
     setError(null);
     setLoading(true);
-    
+
     try {
       await signInWithApple();
       navigate('/');
@@ -76,7 +76,7 @@ const RegisterPage: React.FC = () => {
       setLoading(false);
     }
   };
-  
+
   return (
     <Layout title={t('auth.signup')} hideNavigation>
       <div className="flex flex-col items-center justify-center p-6">
@@ -85,13 +85,13 @@ const RegisterPage: React.FC = () => {
             <h1 className="text-2xl font-bold text-primary">{t('app.name')}</h1>
             <p className="text-gray-600 mt-2">{t('app.tagline')}</p>
           </div>
-          
+
           {error && (
             <div className="bg-red-50 text-red-700 p-3 rounded-md mb-4">
               {error}
             </div>
           )}
-          
+
           <form onSubmit={handleRegister} className="mb-6">
             <div className="mb-4">
               <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
@@ -106,7 +106,7 @@ const RegisterPage: React.FC = () => {
                 required
               />
             </div>
-            
+
             <div className="mb-4">
               <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
                 {t('auth.email')}
@@ -120,7 +120,7 @@ const RegisterPage: React.FC = () => {
                 required
               />
             </div>
-            
+
             <div className="mb-4">
               <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
                 {t('auth.password')}
@@ -134,7 +134,7 @@ const RegisterPage: React.FC = () => {
                 required
               />
             </div>
-            
+
             <div className="mb-6">
               <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-1">
                 {t('auth.confirmPassword')}
@@ -148,7 +148,7 @@ const RegisterPage: React.FC = () => {
                 required
               />
             </div>
-            
+
             <button
               type="submit"
               disabled={loading}
@@ -164,7 +164,7 @@ const RegisterPage: React.FC = () => {
               )}
             </button>
           </form>
-          
+
           <div className="relative mb-6">
             <div className="absolute inset-0 flex items-center">
               <div className="w-full border-t border-gray-300"></div>
@@ -175,7 +175,7 @@ const RegisterPage: React.FC = () => {
               </span>
             </div>
           </div>
-          
+
           <div className="space-y-3">
             <button
               onClick={handleGoogleSignIn}
@@ -202,7 +202,7 @@ const RegisterPage: React.FC = () => {
               </svg>
               {t('auth.continueWithGoogle')}
             </button>
-            
+
             <button
               onClick={handleAppleSignIn}
               disabled={loading}
@@ -214,7 +214,7 @@ const RegisterPage: React.FC = () => {
               {t('auth.continueWithApple')}
             </button>
           </div>
-          
+
           <div className="text-center mt-6">
             <p className="text-sm text-gray-600">
               {t('auth.alreadyHaveAccount')}{' '}
@@ -229,4 +229,4 @@ const RegisterPage: React.FC = () => {
   );
 };
 
-export default RegisterPage; 
+export default RegisterPage;
