@@ -209,7 +209,8 @@
     "earnInStore": "Visit the restaurant and scan the in-store QR code.",
     "onePointPerDay": "Earn one point per day with in-store visits.",
     "onePointPerOrder": "Earn one point per delivery order.",
-    "codeExpiryInfo": "Delivery codes expire 2 months after creation."
+    "codeExpiryInfo": "Delivery codes expire 2 months after creation.",
+    "info": "Info"
   },
   "errors": {
     "offline": "You are offline",

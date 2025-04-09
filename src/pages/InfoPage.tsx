@@ -67,7 +67,7 @@ const InfoPage: React.FC = () => {
   ];
 
   return (
-    <Layout title={t('info.title')}>
+    <Layout title={t('info.info')}>
       <div className="p-4 bg-gray-50 min-h-screen">
         {/* Restaurant Section */}
         <div className="bg-white rounded-lg shadow-md p-6 mb-6">
