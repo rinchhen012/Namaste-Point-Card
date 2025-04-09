@@ -184,7 +184,14 @@
     "helpAndSupport": "Help & Support",
     "about": "About",
     "version": "Version",
-    "switchLanguage": "Switch to Japanese"
+    "switchLanguage": "Switch to Japanese",
+    "settings": "Settings",
+    "changePassword": "Change Password",
+    "currentPassword": "Current Password",
+    "newPassword": "New Password",
+    "confirmNewPassword": "Confirm New Password",
+    "passwordUpdateSuccess": "Password updated successfully!",
+    "passwordChangeNotApplicable": "Password change is not available for your sign-in method."
   },
   "pointsHistory": {
     "history": "Points History",

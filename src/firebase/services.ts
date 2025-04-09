@@ -8,7 +8,10 @@ import {
   signInWithPopup,
   User,
   getAuth,
-  OAuthProvider
+  OAuthProvider,
+  reauthenticateWithCredential,
+  EmailAuthProvider,
+  updatePassword as fbUpdatePassword
 } from 'firebase/auth';
 import {
   doc,
@@ -937,3 +940,38 @@ export const deleteUserAccount = async () => {
     throw error;
   }
 };
+
+// Change user password
+export async function updateUserPassword(currentPassword: string, newPassword: string): Promise<void> {
+  const user = auth.currentUser;
+  if (!user || !user.email) { // Need email for credential
+    throw new Error("User not authenticated or email unavailable.");
+  }
+
+  if (!currentPassword || !newPassword) {
+    throw new Error("Current and new passwords are required.");
+  }
+  if (newPassword.length < 6) {
+    throw new Error("New password must be at least 6 characters long.");
+  }
+
+  try {
+    // Re-authenticate the user first for security
+    const credential = EmailAuthProvider.credential(user.email, currentPassword);
+    await reauthenticateWithCredential(user, credential);
+
+    // If re-authentication is successful, update the password
+    await fbUpdatePassword(user, newPassword);
+
+  } catch (error: any) {
+    console.error("Error updating password:", error);
+    // Provide more specific error messages if possible
+    if (error.code === 'auth/wrong-password') {
+      throw new Error('Incorrect current password.');
+    } else if (error.code === 'auth/weak-password') {
+      throw new Error('New password is too weak.');
+    } else {
+      throw new Error('Failed to update password. Please try again.');
+    }
+  }
+}

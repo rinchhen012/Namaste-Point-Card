@@ -179,7 +179,14 @@
     "helpAndSupport": "ヘルプとサポート",
     "about": "アプリについて",
     "version": "バージョン",
-    "switchLanguage": "英語に切り替え"
+    "switchLanguage": "英語に切り替え",
+    "settings": "設定",
+    "changePassword": "パスワード変更",
+    "currentPassword": "現在のパスワード",
+    "newPassword": "新しいパスワード",
+    "confirmNewPassword": "新しいパスワード(確認)",
+    "passwordUpdateSuccess": "パスワードが正常に更新されました！",
+    "passwordChangeNotApplicable": "ご利用のサインイン方法ではパスワードを変更できません。"
   },
   "pointsHistory": {
     "history": "ポイント履歴",

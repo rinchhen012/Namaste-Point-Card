@@ -7,6 +7,7 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { logoutUser, getUserPointsHistory, deleteUserAccount, updateUserDisplayName } from '../firebase/services';
 import { PointsTransaction } from '../types/index';
 import ConfirmationModal from '../components/Admin/ConfirmationModal';
+import ChangePasswordModal from '../components/ChangePasswordModal';
 
 const ProfilePage: React.FC = () => {
   const { t } = useTranslation();
@@ -23,6 +24,7 @@ const ProfilePage: React.FC = () => {
   const [newName, setNewName] = useState(userProfile?.displayName || '');
   const [editError, setEditError] = useState<string | null>(null);
   const nameInputRef = useRef<HTMLInputElement>(null);
+  const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
 
   useEffect(() => {
     if (!currentUser) {
@@ -130,6 +132,14 @@ const ProfilePage: React.FC = () => {
       setEditError(err.message || t('common.error'));
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleOpenPasswordModal = () => {
+    if (currentUser?.providerData?.some(provider => provider.providerId === 'password') || currentUser?.email) {
+      setIsPasswordModalOpen(true);
+    } else {
+      setError(t('profile.passwordChangeNotApplicable'));
     }
   };
 
@@ -279,6 +289,23 @@ const ProfilePage: React.FC = () => {
             </svg>
           </button>
 
+          {(currentUser?.providerData?.some(provider => provider.providerId === 'password') || currentUser?.email) && (
+            <button
+              onClick={handleOpenPasswordModal}
+              className="w-full flex justify-between items-center p-4 text-left hover:bg-gray-50 border-b border-gray-100"
+            >
+              <div className="flex items-center">
+                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-gray-500" viewBox="0 0 20 20" fill="currentColor">
+                   <path fillRule="evenodd" d="M18 8a6 6 0 11-12 0 6 6 0 0112 0zM7 8a3 3 0 116 0 3 3 0 01-6 0zm0 7a4 4 0 00-4 4v1a1 1 0 001 1h8a1 1 0 001-1v-1a4 4 0 00-4-4z" clipRule="evenodd" />
+                 </svg>
+                <p className="font-medium">{t('profile.changePassword')}</p>
+              </div>
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
+              </svg>
+            </button>
+          )}
+
           {/* View History Button */}
           <button
             onClick={() => navigate('/redemption-history')}
@@ -337,6 +364,10 @@ const ProfilePage: React.FC = () => {
         cancelButtonText={t('common.cancel')}
         confirmButtonColor="red"
         isLoading={isDeleting}
+      />
+      <ChangePasswordModal
+        isOpen={isPasswordModalOpen}
+        onClose={() => setIsPasswordModalOpen(false)}
       />
     </Layout>
   );
