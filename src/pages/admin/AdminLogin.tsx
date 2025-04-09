@@ -125,13 +125,6 @@ const AdminLogin: React.FC = () => {
           </div>
         </form>
 
-        {import.meta.env.DEV && (
-          <div className="text-center text-xs text-gray-500 mt-4 p-3 bg-gray-100 rounded">
-            <p><strong>Development Mode</strong></p>
-            <p>Use admin@namaste.com / admin123 to log in</p>
-          </div>
-        )}
-
         <div className="text-center text-xs text-gray-500 mt-4">
           <p>
             This is the admin area. Unauthorized access is prohibited.
