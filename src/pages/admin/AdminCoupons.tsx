@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { getCoupons, createCoupon, deactivateCoupon } from '../../firebase/adminServices';
+import { getCoupons, createCoupon, deactivateCoupon, verifyCodeChecksum } from '../../firebase/adminServices';
 import PrintableCodes from '../../components/Admin/PrintableCodes';
 import { formatDate, formatDateTime, isDateExpired } from '../../utils/dateUtils';
 import ConfirmationModal from '../../components/Admin/ConfirmationModal';
@@ -21,6 +21,26 @@ interface SortConfig {
   direction: SortDirection;
 }
 
+// This will be imported from adminServices.ts
+// If typing/importing fails, define locally as fallback
+function calculateChecksum(code: string): string {
+  let sum = 0;
+  const PRIME = 17;
+
+  for (let i = 0; i < code.length; i++) {
+    const charCode = code.charCodeAt(i);
+    sum += charCode + (charCode * (i + 1));
+  }
+
+  sum = (sum * PRIME) % 36;
+
+  if (sum < 10) {
+    return sum.toString();
+  } else {
+    return String.fromCharCode(55 + sum);
+  }
+}
+
 const AdminCoupons: React.FC = () => {
   const [coupons, setCoupons] = useState<Coupon[]>([]);
   const [loading, setLoading] = useState(true);
@@ -30,7 +50,6 @@ const AdminCoupons: React.FC = () => {
     codePrefix: 'D',
     codeCount: 30,
     expiryDays: 60,
-    generateRandomCodes: true
   });
   const [selectedCouponIds, setSelectedCouponIds] = useState<Set<string>>(new Set());
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -144,23 +163,37 @@ const AdminCoupons: React.FC = () => {
         const newCoupons: Coupon[] = [];
 
         for (let i = 0; i < formData.codeCount; i++) {
-          // Generate a random code if enabled
-          const randomString = formData.generateRandomCodes
-            ? Math.random().toString(36).substring(2, 7).toUpperCase()
-            : (i + 1).toString().padStart(5, '0');
+          // Always use cryptographically secure random generation
+          const array = new Uint8Array(4);
+          window.crypto.getRandomValues(array);
+          const randomString = Array.from(array, byte =>
+            ('0' + (byte & 0xFF).toString(16)).slice(-2)
+          ).join('').substring(0, 8).toUpperCase();
 
+          // Create base code
           const code = `${formData.codePrefix}-${randomString}`;
-          const expiresAt = new Date(Date.now() + parseInt(formData.expiryDays.toString()) * 24 * 60 * 60 * 1000);
 
+          // Calculate and append checksum
+          const checksum = calculateChecksum(code);
+          const fullCode = `${code}${checksum}`;
+
+          // Calculate expiry date
+          const expiryDate = new Date();
+          expiryDate.setDate(expiryDate.getDate() + formData.expiryDays);
+
+          // Create mock coupon
           const coupon = {
-            id: `coupon-new-${Date.now()}-${i}`,
-            code,
+            id: `mock-${i}-${Date.now()}`,
+            code: fullCode,
             used: false,
             createdAt: new Date(),
-            expiresAt
+            expiresAt: expiryDate,
+            usedBy: null,
+            usedAt: null
           };
 
           newCoupons.push(coupon as Coupon);
+          // No need to track generatedCodes separately with new approach
         }
 
         console.log("MOCK: Generated codes:", newCoupons);
@@ -179,8 +212,7 @@ const AdminCoupons: React.FC = () => {
       const result = await createCoupon(
         formData.codePrefix,
         parseInt(formData.codeCount.toString()),
-        parseInt(formData.expiryDays.toString()),
-        formData.generateRandomCodes
+        parseInt(formData.expiryDays.toString())
       );
 
       console.log("PROD: Result from createCoupon:", result);
@@ -560,20 +592,6 @@ const AdminCoupons: React.FC = () => {
               <p className="text-gray-500 text-xs mt-1">
                 Number of days until the coupons expire
               </p>
-            </div>
-
-            <div className="flex items-center">
-              <input
-                type="checkbox"
-                name="generateRandomCodes"
-                checked={formData.generateRandomCodes}
-                onChange={handleInputChange}
-                id="generateRandomCodes"
-                className="mr-2"
-              />
-              <label htmlFor="generateRandomCodes" className="text-gray-700">
-                Generate random codes
-              </label>
             </div>
           </div>
 

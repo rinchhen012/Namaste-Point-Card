@@ -27,12 +27,15 @@ import {
   Timestamp,
   increment,
   limit,
-  deleteDoc
+  deleteDoc,
+  runTransaction,
+  serverTimestamp
 } from 'firebase/firestore';
 import { httpsCallable } from 'firebase/functions';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { auth, db, functions, storage } from './config';
 import { UserProfile, Reward, Redemption, PointsTransaction, OnlineOrderCode } from '../types';
+import { verifyCodeChecksum } from './adminServices';
 
 // Mock data for development
 const mockData = {
@@ -118,6 +121,283 @@ const mockData = {
       metadata: { orderCode: 'ORDER123' }
     }
   ]
+};
+
+/**
+ * Rate limit configuration
+ */
+const RATE_LIMITS = {
+  USER_MAX_ATTEMPTS: 5,       // Max 5 attempts per user per day
+  USER_WINDOW_HOURS: 24,      // Reset user attempts after 24 hours
+  IP_MAX_ATTEMPTS: 10,        // Max 10 attempts per IP per hour
+  IP_WINDOW_HOURS: 1,         // Reset IP attempts after 1 hour
+  GLOBAL_MAX_ATTEMPTS: 100,   // Alert threshold: 100 failed attempts
+  GLOBAL_WINDOW_MINUTES: 10   // Within 10 minute window
+};
+
+/**
+ * Check rate limits before processing redemption
+ * Returns true if within limits, false if exceeded
+ */
+async function checkRateLimits(userId: string, ipAddress: string): Promise<boolean> {
+  try {
+    const now = Timestamp.now();
+    const rateLimitsRef = collection(db, 'rate_limits');
+
+    // 1. Check user-based rate limit
+    const userLimitRef = doc(rateLimitsRef, `user_${userId}`);
+    const userLimitDoc = await getDoc(userLimitRef);
+
+    if (userLimitDoc.exists()) {
+      const userData = userLimitDoc.data();
+      const resetTime = new Date(userData.resetTime.toDate().getTime() + (RATE_LIMITS.USER_WINDOW_HOURS * 60 * 60 * 1000));
+
+      if (now.toDate() < resetTime) {
+        // Window still active, check attempts
+        if (userData.attempts >= RATE_LIMITS.USER_MAX_ATTEMPTS) {
+          console.warn(`Rate limit exceeded for user ${userId}: ${userData.attempts} attempts`);
+          return false; // Exceeded limit
+        }
+        // Update attempt count
+        await updateDoc(userLimitRef, {
+          attempts: increment(1)
+        });
+      } else {
+        // Window expired, reset
+        await setDoc(userLimitRef, {
+          userId,
+          attempts: 1,
+          resetTime: now
+        });
+      }
+    } else {
+      // First attempt for this user
+      await setDoc(userLimitRef, {
+        userId,
+        attempts: 1,
+        resetTime: now
+      });
+    }
+
+    // 2. Check IP-based rate limit (if IP provided)
+    if (ipAddress) {
+      const ipLimitRef = doc(rateLimitsRef, `ip_${ipAddress.replace(/\./g, '_')}`);
+      const ipLimitDoc = await getDoc(ipLimitRef);
+
+      if (ipLimitDoc.exists()) {
+        const ipData = ipLimitDoc.data();
+        const resetTime = new Date(ipData.resetTime.toDate().getTime() + (RATE_LIMITS.IP_WINDOW_HOURS * 60 * 60 * 1000));
+
+        if (now.toDate() < resetTime) {
+          // Window still active, check attempts
+          if (ipData.attempts >= RATE_LIMITS.IP_MAX_ATTEMPTS) {
+            console.warn(`Rate limit exceeded for IP ${ipAddress}: ${ipData.attempts} attempts`);
+            return false; // Exceeded limit
+          }
+          // Update attempt count
+          await updateDoc(ipLimitRef, {
+            attempts: increment(1)
+          });
+        } else {
+          // Window expired, reset
+          await setDoc(ipLimitRef, {
+            ipAddress,
+            attempts: 1,
+            resetTime: now
+          });
+        }
+      } else {
+        // First attempt for this IP
+        await setDoc(ipLimitRef, {
+          ipAddress,
+          attempts: 1,
+          resetTime: now
+        });
+      }
+    }
+
+    // 3. Check global rate limit
+    await runTransaction(db, async (transaction) => {
+      const globalLimitRef = doc(rateLimitsRef, 'global');
+      const globalLimitDoc = await transaction.get(globalLimitRef);
+
+      if (globalLimitDoc.exists()) {
+        const globalData = globalLimitDoc.data();
+        const resetTime = new Date(globalData.resetTime.toDate().getTime() + (RATE_LIMITS.GLOBAL_WINDOW_MINUTES * 60 * 1000));
+
+        if (now.toDate() < resetTime) {
+          // Window still active
+          transaction.update(globalLimitRef, {
+            attempts: increment(1)
+          });
+
+          // Check if we need to send an alert
+          if (globalData.attempts >= RATE_LIMITS.GLOBAL_MAX_ATTEMPTS && !globalData.alerted) {
+            transaction.update(globalLimitRef, { alerted: true });
+
+            // Send alert to an admin notification collection
+            const alertRef = doc(collection(db, 'admin_alerts'));
+            transaction.set(alertRef, {
+              type: 'rate_limit',
+              message: `Global rate limit threshold of ${RATE_LIMITS.GLOBAL_MAX_ATTEMPTS} redemption attempts exceeded in ${RATE_LIMITS.GLOBAL_WINDOW_MINUTES} minutes`,
+              timestamp: now
+            });
+          }
+        } else {
+          // Window expired, reset
+          transaction.set(globalLimitRef, {
+            attempts: 1,
+            resetTime: now,
+            alerted: false
+          });
+        }
+      } else {
+        // Initialize global counter
+        transaction.set(globalLimitRef, {
+          attempts: 1,
+          resetTime: now,
+          alerted: false
+        });
+      }
+    });
+
+    return true; // Within limits
+  } catch (error) {
+    console.error('Error checking rate limits:', error);
+    // On error, allow the attempt but log the issue
+    return true;
+  }
+}
+
+/**
+ * Track failed redemption attempt
+ */
+async function trackFailedAttempt(userId: string, ipAddress: string, code: string) {
+  try {
+    // Log the failed attempt for auditing
+    await addDoc(collection(db, 'failed_redemptions'), {
+      userId,
+      ipAddress,
+      code,
+      timestamp: Timestamp.now()
+    });
+  } catch (error) {
+    console.error('Error tracking failed attempt:', error);
+  }
+}
+
+/**
+ * Redeem a coupon code
+ * Modified to include rate limiting and checksum verification
+ */
+export const redeemCouponCode = async (code: string, userId: string, ipAddress: string = '') => {
+  try {
+    // First check rate limits
+    const withinLimits = await checkRateLimits(userId, ipAddress);
+    if (!withinLimits) {
+      return {
+        success: false,
+        error: 'Too many attempts. Please try again later.',
+        rateLimited: true
+      };
+    }
+
+    // Verify the checksum
+    if (!verifyCodeChecksum(code)) {
+      await trackFailedAttempt(userId, ipAddress, code);
+      return {
+        success: false,
+        error: 'Invalid coupon code format'
+      };
+    }
+
+    // Continue with existing redemption logic
+    const couponsRef = collection(db, 'delivery_coupons');
+    const couponQuery = query(couponsRef, where('code', '==', code));
+    const couponSnapshot = await getDocs(couponQuery);
+
+    if (couponSnapshot.empty) {
+      await trackFailedAttempt(userId, ipAddress, code);
+      return {
+        success: false,
+        error: 'Invalid coupon code'
+      };
+    }
+
+    const couponDoc = couponSnapshot.docs[0];
+    const couponData = couponDoc.data();
+
+    // Check if already used
+    if (couponData.used) {
+      await trackFailedAttempt(userId, ipAddress, code);
+      return {
+        success: false,
+        error: 'This coupon has already been used'
+      };
+    }
+
+    // Check if expired
+    const expiryDate = couponData.expiresAt.toDate();
+    if (expiryDate < new Date()) {
+      await trackFailedAttempt(userId, ipAddress, code);
+      return {
+        success: false,
+        error: 'This coupon has expired'
+      };
+    }
+
+    // Mark as used
+    await updateDoc(couponDoc.ref, {
+      used: true,
+      usedBy: userId,
+      usedAt: serverTimestamp()
+    });
+
+    // Award points to user
+    const POINTS_PER_COUPON = 5; // Adjust as needed
+    const userRef = doc(db, 'users', userId);
+
+    // Get current user data
+    const userSnap = await getDoc(userRef);
+    if (!userSnap.exists()) {
+      return {
+        success: false,
+        error: 'User not found'
+      };
+    }
+
+    const userData = userSnap.data();
+    const currentPoints = userData.points || 0;
+
+    // Update user points
+    await updateDoc(userRef, {
+      points: currentPoints + POINTS_PER_COUPON
+    });
+
+    // Record transaction in points_history
+    await addDoc(collection(db, 'points_history'), {
+      userId,
+      points: POINTS_PER_COUPON,
+      type: 'earn',
+      source: 'delivery_coupon',
+      timestamp: serverTimestamp(),
+      metadata: {
+        couponCode: code
+      }
+    });
+
+    return {
+      success: true,
+      points: POINTS_PER_COUPON,
+      totalPoints: currentPoints + POINTS_PER_COUPON
+    };
+  } catch (error) {
+    console.error('Error redeeming coupon:', error);
+    return {
+      success: false,
+      error: 'Failed to redeem coupon'
+    };
+  }
 };
 
 // User Authentication

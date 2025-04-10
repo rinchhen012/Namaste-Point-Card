@@ -18,6 +18,7 @@ import { httpsCallable } from 'firebase/functions';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, functions, storage } from './config';
 import { UserProfile, Reward, Redemption, OnlineOrderCode, PointsTransaction } from '../types';
+import crypto from 'crypto';
 
 // Dashboard statistics
 export const getStatsData = async () => {
@@ -193,24 +194,106 @@ export const getCoupons = async () => {
   }
 };
 
+/**
+ * Calculate a validation checksum for a coupon code
+ * Returns a single character (0-9, A-Z) checksum
+ */
+function calculateChecksum(code: string): string {
+  // Simple but effective algorithm:
+  // 1. Sum the character codes
+  // 2. Add the position-weighted values (multiply each char code by its position)
+  // 3. Apply a prime multiplier for additional complexity
+  // 4. Take modulo 36 to get a value 0-35
+  // 5. Convert to character (0-9, A-Z)
+
+  let sum = 0;
+  const PRIME = 17; // A prime number for better distribution
+
+  for (let i = 0; i < code.length; i++) {
+    const charCode = code.charCodeAt(i);
+    sum += charCode + (charCode * (i + 1));
+  }
+
+  sum = (sum * PRIME) % 36;
+
+  // Convert to alphanumeric character (0-9, A-Z)
+  if (sum < 10) {
+    return sum.toString();
+  } else {
+    // 10 -> A, 11 -> B, etc.
+    return String.fromCharCode(55 + sum); // ASCII 'A' is 65, so 55 + 10 = 65
+  }
+}
+
+/**
+ * Verify if a coupon code with checksum is valid
+ */
+export function verifyCodeChecksum(fullCode: string): boolean {
+  if (fullCode.length < 2) return false;
+
+  // Last character is the checksum
+  const code = fullCode.slice(0, -1);
+  const providedChecksum = fullCode.slice(-1);
+  const calculatedChecksum = calculateChecksum(code);
+
+  return providedChecksum === calculatedChecksum;
+}
+
 export const createCoupon = async (
   codePrefix: string,
   count: number,
-  expiryDays: number,
-  generateRandomCodes: boolean
+  expiryDays: number
 ) => {
   try {
     const batch = [];
     const generatedCodes: string[] = []; // Array to store generated codes
 
-    for (let i = 0; i < count; i++) {
-      // Generate a random code if enabled
-      const randomString = generateRandomCodes
-        ? Math.random().toString(36).substring(2, 7).toUpperCase()
-        : (i + 1).toString().padStart(5, '0');
+    // Query existing codes to check for uniqueness
+    const couponsRef = collection(db, 'delivery_coupons');
+    const existingCodesSnapshot = await getDocs(couponsRef);
+    const existingCodes = new Set<string>();
 
-      const code = `${codePrefix}-${randomString}`;
-      generatedCodes.push(code); // Store the generated code
+    // Build a set of existing codes for efficient lookups
+    existingCodesSnapshot.forEach(doc => {
+      const data = doc.data();
+      existingCodes.add(data.code);
+    });
+
+    for (let i = 0; i < count; i++) {
+      let code: string;
+      let fullCode: string;
+      let isUnique = false;
+
+      // Keep generating new codes until we get a unique one
+      while (!isUnique) {
+        // Always use cryptographically secure random generation
+        let randomString;
+        // For browser or Node environment
+        if (typeof window !== 'undefined' && window.crypto) {
+          // Browser environment
+          const array = new Uint8Array(4);
+          window.crypto.getRandomValues(array);
+          randomString = Array.from(array, byte =>
+            ('0' + (byte & 0xFF).toString(16)).slice(-2)
+          ).join('').substring(0, 8).toUpperCase();
+        } else {
+          // Node.js environment
+          const buffer = crypto.randomBytes(4);
+          randomString = buffer.toString('hex').substring(0, 8).toUpperCase();
+        }
+
+        code = `${codePrefix}-${randomString}`;
+
+        // Calculate and append the checksum character
+        const checksum = calculateChecksum(code);
+        fullCode = `${code}${checksum}`;
+
+        // Check if this code already exists in the database or was just generated
+        isUnique = !existingCodes.has(fullCode) && !generatedCodes.includes(fullCode);
+      }
+
+      generatedCodes.push(fullCode!); // Store the generated unique code
+      existingCodes.add(fullCode!); // Add to our set to prevent duplicates within this batch
 
       // Calculate expiry date
       const expiryDate = new Date();
@@ -218,7 +301,7 @@ export const createCoupon = async (
 
       // Create coupon document
       const couponData = {
-        code,
+        code: fullCode!,
         used: false,
         createdAt: serverTimestamp(),
         expiresAt: Timestamp.fromDate(expiryDate)
