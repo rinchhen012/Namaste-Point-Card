@@ -58,7 +58,7 @@ interface CreateDeliveryCouponsData {
  * @param code - The online order code to validate
  * @returns A success/failure message and points awarded
  */
-export const validateOnlineCode = onCall(
+export const validateOnlineOrderCode = onCall(
   async (request: CallableRequest<ValidateCodeData>) => {
     // Check if user is authenticated
     if (!request.auth) {

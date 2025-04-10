@@ -6,7 +6,7 @@ This directory contains the Firebase Cloud Functions for the Namaste Point Card 
 
 ### User Functions
 
-- **validateOnlineCode** - Validates an online order code and awards points to the user
+- **validateOnlineOrderCode** - Validates an online order code and awards points to the user
 - **checkInAtStore** - Validates a user's geolocation for in-store check-in and awards points
 
 ### Admin Functions
@@ -18,7 +18,7 @@ This directory contains the Firebase Cloud Functions for the Namaste Point Card 
 
 ### Prerequisites
 
-- Node.js 16.x
+- Node.js 20.x
 - Firebase CLI: `npm install -g firebase-tools`
 - Firebase project with Blaze plan (required for Cloud Functions)
 
@@ -54,7 +54,10 @@ firebase functions:shell
 Then call the functions:
 
 ```js
-validateOnlineCode({ code: "NAMASTE-SAMPLE1" }, { auth: { uid: "user123" } });
+validateOnlineOrderCode(
+  { code: "NAMASTE-SAMPLE1" },
+  { auth: { uid: "user123" } }
+);
 ```
 
 ### Seeding Initial Data
@@ -91,12 +94,12 @@ firebase deploy --only functions
 To deploy a specific function:
 
 ```bash
-firebase deploy --only functions:validateOnlineCode
+firebase deploy --only functions:validateOnlineOrderCode
 ```
 
 ## Function Details
 
-### validateOnlineCode
+### validateOnlineOrderCode
 
 Cloud callable function that validates an online order code and awards points to the user.
 
