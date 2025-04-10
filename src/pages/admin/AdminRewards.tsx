@@ -613,7 +613,7 @@ const AdminRewards: React.FC = () => {
                     <img
                       src={formData.imageUrl}
                       alt="Current reward"
-                      className="h-32 object-cover rounded border border-gray-300"
+                      className="h-24 w-full object-contain rounded border border-gray-300"
                     />
                   </div>
                 )}

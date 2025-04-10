@@ -207,11 +207,11 @@ const RewardsPage: React.FC = () => {
                 <div key={reward.id} className="bg-white rounded-lg shadow-md overflow-hidden flex flex-col">
                   {/* Image Section */}
                   {reward.imageUrl && (
-                    <div className="w-full h-52 bg-gray-200 flex-shrink-0">
+                    <div className="w-full h-40 bg-gray-200 flex-shrink-0">
                       <img
                         src={reward.imageUrl}
                         alt={reward.name[userProfile.language]}
-                        className="w-full h-full object-cover"
+                        className="w-full h-40 object-contain"
                       />
                     </div>
                   )}

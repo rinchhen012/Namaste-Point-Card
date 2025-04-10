@@ -274,11 +274,11 @@ const RedemptionPage: React.FC = () => {
               {t('rewards.confirmRedeem', { reward: reward.name[userProfile.language], points: reward.pointsCost })}
             </h2>
             {reward.imageUrl && (
-              <div className="mb-4 rounded-lg overflow-hidden">
+              <div className="mb-4 rounded-lg overflow-hidden max-h-36">
                 <img
                   src={reward.imageUrl}
                   alt={reward.name[userProfile.language]}
-                  className="w-full h-auto object-cover"
+                  className="w-full h-36 object-contain"
                   onError={(e) => {
                     e.currentTarget.style.display = 'none';
                   }}
@@ -347,11 +347,11 @@ const RedemptionPage: React.FC = () => {
               {userProfile.language === 'ja' && 'rewardNameJa' in redemption ? redemption.rewardNameJa : redemption.rewardName}
             </h2>
             {'imageUrl' in redemption && redemption.imageUrl && (
-              <div className="mb-4 rounded-lg overflow-hidden">
+              <div className="mb-4 rounded-lg overflow-hidden max-h-36">
                 <img
                   src={redemption.imageUrl}
                   alt={userProfile.language === 'ja' && 'rewardNameJa' in redemption ? redemption.rewardNameJa : redemption.rewardName}
-                  className="w-full h-auto object-cover"
+                  className="w-full h-36 object-contain"
                   onError={(e) => {
                     e.currentTarget.style.display = 'none';
                   }}

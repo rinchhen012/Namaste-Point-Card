@@ -34,5 +34,11 @@ service firebase.storage {
       allow read: if true;
       allow write: if isAdmin();
     }
+
+    // Allow writing to nested paths within rewards
+    match /rewards/{rewardId}/{allPaths=**} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
   }
 }
