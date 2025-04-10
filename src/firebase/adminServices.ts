@@ -280,6 +280,7 @@ export const createCoupon = async (
     }
 
     // For production, call the Cloud Function
+    // With Firebase Functions v2, the function name remains the same
     const createDeliveryCoupons = httpsCallable(functions, 'createDeliveryCoupons');
 
     const result = await createDeliveryCoupons({

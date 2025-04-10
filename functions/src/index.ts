@@ -1,18 +1,16 @@
 /**
  * Import function triggers from their respective submodules:
  *
- * import {onCall} from "firebase-functions/v2/https";
- * import {onDocumentWritten} from "firebase-functions/v2/firestore";
- *
  * See a full list of supported triggers at https://firebase.google.com/docs/functions
  */
 
-import * as functions from 'firebase-functions';
-import * as admin from 'firebase-admin';
-import { onCall, CallableRequest } from 'firebase-functions/v2/https';
+// Load environment variables
+import * as dotenv from 'dotenv';
+dotenv.config();
 
-// Import the CallableContext type
-type CallableContext = functions.https.CallableContext;
+import * as admin from 'firebase-admin';
+import { onCall, CallableRequest, HttpsError } from 'firebase-functions/v2/https';
+import { onRequest } from 'firebase-functions/v2/https';
 
 // Initialize Firebase Admin SDK
 admin.initializeApp();
@@ -60,20 +58,20 @@ interface CreateDeliveryCouponsData {
  * @param code - The online order code to validate
  * @returns A success/failure message and points awarded
  */
-export const validateOnlineCode = functions.https.onCall(
-  async (data: ValidateCodeData, context: CallableContext) => {
+export const validateOnlineCode = onCall(
+  async (request: CallableRequest<ValidateCodeData>) => {
     // Check if user is authenticated
-    if (!context.auth) {
+    if (!request.auth) {
       return { success: false, message: 'Authentication required' };
     }
 
-    const { code } = data;
+    const { code } = request.data;
     if (!code) {
       return { success: false, message: 'No code provided' };
     }
 
     // Get the user ID from the authenticated context
-    const userId = context.auth.uid;
+    const userId = request.auth.uid;
 
     try {
       // Use a transaction to ensure atomicity
@@ -158,14 +156,14 @@ export const validateOnlineCode = functions.https.onCall(
  * @param longitude - User's current longitude
  * @returns Success or failure message
  */
-export const validateQRCheckIn = functions.https.onCall(
-  async (data: QRCheckInData, context: CallableContext) => {
+export const validateQRCheckIn = onCall(
+  async (request: CallableRequest<QRCheckInData>) => {
     // Check if user is authenticated
-    if (!context.auth) {
+    if (!request.auth) {
       return { success: false, message: 'Authentication required' };
     }
 
-    const { qrCode, latitude, longitude } = data;
+    const { qrCode, latitude, longitude } = request.data;
     if (!qrCode) {
       return { success: false, message: 'QR code is required' };
     }
@@ -175,7 +173,7 @@ export const validateQRCheckIn = functions.https.onCall(
     }
 
     // Get the user ID from the authenticated context
-    const userId = context.auth.uid;
+    const userId = request.auth.uid;
 
     try {
       // Verify the QR code is valid (matches our restaurant codes)
@@ -289,21 +287,21 @@ export const validateQRCheckIn = functions.https.onCall(
  * Generates a batch of unique online order codes
  * Admin only function
  */
-export const generateOnlineOrderCodes = functions.https.onCall(
-  async (data: GenerateCodesData, context: CallableContext) => {
+export const generateOnlineOrderCodes = onCall(
+  async (request: CallableRequest<GenerateCodesData>) => {
     // Check if user is authenticated and is an admin
-    if (!context.auth) {
+    if (!request.auth) {
       return { success: false, message: 'Authentication required' };
     }
 
     try {
       // Check if user is an admin
-      const userDoc = await db.collection('users').doc(context.auth.uid).get();
+      const userDoc = await db.collection('users').doc(request.auth.uid).get();
       if (!userDoc.exists || userDoc.data()?.role !== 'admin') {
         return { success: false, message: 'Admin access required' };
       }
 
-      const { count = 1, prefix = 'NAMASTE', pointsAwarded = 5, expiryDays = 60 } = data;
+      const { count = 1, prefix = 'NAMASTE', pointsAwarded = 5, expiryDays = 60 } = request.data;
 
       if (count < 1 || count > 100) {
         return { success: false, message: 'Count must be between 1 and 100' };
@@ -356,16 +354,16 @@ export const generateOnlineOrderCodes = functions.https.onCall(
  * Gets admin dashboard statistics
  * Admin only function
  */
-export const getAdminStats = functions.https.onCall(
-  async (data: GetAdminStatsData, context: CallableContext) => {
+export const getAdminStats = onCall(
+  async (request: CallableRequest<GetAdminStatsData>) => {
     // Check if user is authenticated and is an admin
-    if (!context.auth) {
+    if (!request.auth) {
       return { success: false, message: 'Authentication required' };
     }
 
     try {
       // Check if user is an admin
-      const userDoc = await db.collection('users').doc(context.auth.uid).get();
+      const userDoc = await db.collection('users').doc(request.auth.uid).get();
       if (!userDoc.exists || userDoc.data()?.role !== 'admin') {
         return { success: false, message: 'Admin access required' };
       }
@@ -437,25 +435,25 @@ function calculateDistance(
 }
 
 // Add user admin claims
-export const addAdminRole = functions.https.onCall(
-  async (data: AddAdminRoleData, context: CallableContext) => {
+export const addAdminRole = onCall(
+  async (request: CallableRequest<AddAdminRoleData>) => {
     // Check if the request is made by an admin
-    if (!context.auth) {
-      throw new functions.https.HttpsError(
+    if (!request.auth) {
+      throw new HttpsError(
         'unauthenticated',
         'Only authenticated users can add admin roles'
       );
     }
 
     // Get the user's custom claims to check if they're an admin
-    const callerUid = context.auth.uid;
+    const callerUid = request.auth.uid;
     const callerUserRecord = await admin.auth().getUser(callerUid);
     const callerCustomClaims = callerUserRecord.customClaims;
 
     // Only allow existing admins to create new admins
     // For the first admin, you'll need to manually update in Firebase Console
     if (!callerCustomClaims?.admin) {
-      throw new functions.https.HttpsError(
+      throw new HttpsError(
         'permission-denied',
         'Only admins can add admin roles'
       );
@@ -463,9 +461,9 @@ export const addAdminRole = functions.https.onCall(
 
     try {
       // Get the user by email
-      const { email } = data;
+      const { email } = request.data;
       if (!email) {
-        throw new functions.https.HttpsError(
+        throw new HttpsError(
           'invalid-argument',
           'Email is required'
         );
@@ -489,7 +487,7 @@ export const addAdminRole = functions.https.onCall(
         success: true
       };
     } catch (error) {
-      throw new functions.https.HttpsError(
+      throw new HttpsError(
         'internal',
         'Error making the user an admin',
         error
@@ -506,7 +504,7 @@ interface InitialAdminRequest {
 }
 
 // Create the initial admin user with email and password
-export const createInitialAdmin = functions.https.onRequest(async (req, res) => {
+export const createInitialAdmin = onRequest(async (req, res) => {
   // This function should only be callable in development or via a secure console
   // Not for production use
 
@@ -516,10 +514,13 @@ export const createInitialAdmin = functions.https.onRequest(async (req, res) => 
     return;
   }
 
+  // Access config values in a safer way
+  const configAdminKey = process.env.ADMIN_SETUP_KEY;
+
   // Check secret key to authorize this operation
   const { secretKey, email, password } = req.body as InitialAdminRequest;
 
-  if (secretKey !== functions.config().admin?.setup_key) {
+  if (!configAdminKey || secretKey !== configAdminKey) {
     res.status(403).send('Unauthorized');
     return;
   }
@@ -699,3 +700,166 @@ export const createDeliveryCoupons = onCall(
     }
   }
 );
+
+/**
+ * V2 versions of functions for staged migration
+ * These have different names to avoid conflicts with v1 functions
+ */
+
+export const validateOnlineCodeV2 = onCall(
+  async (request: CallableRequest<ValidateCodeData>) => {
+    // Check if user is authenticated
+    if (!request.auth) {
+      return { success: false, message: 'Authentication required' };
+    }
+
+    const { code } = request.data;
+    if (!code) {
+      return { success: false, message: 'No code provided' };
+    }
+
+    // Get the user ID from the authenticated context
+    const userId = request.auth.uid;
+
+    try {
+      // Use a transaction to ensure atomicity
+      const result = await db.runTransaction(async (transaction) => {
+        // Query for the code
+        const codeQuery = db.collection('online_order_codes').where('code', '==', code);
+        const codeSnapshot = await transaction.get(codeQuery);
+
+        // Check if code exists
+        if (codeSnapshot.empty) {
+          return { success: false, message: 'Invalid code' };
+        }
+
+        const codeDoc = codeSnapshot.docs[0];
+        const codeData = codeDoc.data();
+
+        // Check if code is already used
+        if (codeData.isUsed) {
+          return { success: false, message: 'Code already used' };
+        }
+
+        // Check if code is expired
+        const now = admin.firestore.Timestamp.now();
+        if (codeData.expiresAt.toMillis() < now.toMillis()) {
+          return { success: false, message: 'Code has expired' };
+        }
+
+        // Update code to mark as used
+        transaction.update(codeDoc.ref, {
+          isUsed: true,
+          usedAt: now,
+          userId: userId
+        });
+
+        // Add points to user
+        const userRef = db.collection('users').doc(userId);
+        const userDoc = await transaction.get(userRef);
+
+        if (!userDoc.exists) {
+          return { success: false, message: 'User not found' };
+        }
+
+        const userData = userDoc.data();
+        const currentPoints = userData?.points || 0;
+        const pointsToAdd = codeData.pointsAwarded || 5;
+
+        transaction.update(userRef, {
+          points: currentPoints + pointsToAdd,
+          lastVisit: now
+        });
+
+        // Record points transaction
+        const transactionRef = db.collection('points_transactions').doc();
+        transaction.set(transactionRef, {
+          userId: userId,
+          points: pointsToAdd,
+          type: 'online-order',
+          createdAt: now,
+          codeId: codeDoc.id
+        });
+
+        return {
+          success: true,
+          message: 'Code redeemed successfully!',
+          points: pointsToAdd
+        };
+      });
+
+      return result;
+    } catch (error) {
+      console.error('Error validating code:', error);
+      return { success: false, message: 'An error occurred while processing the code' };
+    }
+  }
+);
+
+export const createInitialAdminV2 = onRequest(async (req, res) => {
+  // This function should only be callable in development or via a secure console
+  // Not for production use
+
+  // Only allow POST method
+  if (req.method !== 'POST') {
+    res.status(405).send('Method Not Allowed');
+    return;
+  }
+
+  // Access config values in a safer way
+  const configAdminKey = process.env.ADMIN_SETUP_KEY;
+
+  // Check secret key to authorize this operation
+  const { secretKey, email, password } = req.body as InitialAdminRequest;
+
+  if (!configAdminKey || secretKey !== configAdminKey) {
+    res.status(403).send('Unauthorized');
+    return;
+  }
+
+  if (!email || !password) {
+    res.status(400).send('Email and password are required');
+    return;
+  }
+
+  try {
+    // Check if user already exists
+    try {
+      await admin.auth().getUserByEmail(email);
+      res.status(400).send('User already exists');
+      return;
+    } catch (error) {
+      // User doesn't exist, continue creating
+    }
+
+    // Create user
+    const userRecord = await admin.auth().createUser({
+      email,
+      password,
+      emailVerified: true
+    });
+
+    // Set custom claims
+    await admin.auth().setCustomUserClaims(userRecord.uid, {
+      admin: true
+    });
+
+    // Create user document in Firestore
+    await admin.firestore().collection('users').doc(userRecord.uid).set({
+      uid: userRecord.uid,
+      email: email,
+      displayName: 'Admin User',
+      role: 'admin',
+      points: 0,
+      createdAt: admin.firestore.FieldValue.serverTimestamp()
+    });
+
+    res.status(200).send({
+      message: 'Admin user created successfully',
+      uid: userRecord.uid
+    });
+  } catch (error) {
+    console.error('Error creating admin user:', error);
+    res.status(500).send('Error creating admin user');
+  }
+});

@@ -317,3 +317,113 @@ To verify the function is working correctly:
 2. Check in Firebase Console that the codes were created in the Firestore database
 3. Verify that the codes have the expected format and include the checksum
 4. Test code redemption flow to ensure codes are valid
+
+# Firebase Functions Migration Guide: v1 to v2
+
+## Migration Status
+
+✅ **Completed:**
+
+- The `createDeliveryCoupons` function is fully migrated and deployed as a v2 function
+- All functions have been rewritten in v2 syntax in the codebase
+
+🚧 **Pending:**
+
+- The existing v1 functions need to be properly migrated to v2 following the Firebase guidelines
+
+## Migration Steps for Existing Functions
+
+Firebase doesn't support direct in-place upgrades from v1 to v2 functions. Instead, you need to follow these steps to properly migrate the remaining functions:
+
+### 1. Deploy v2 Functions with New Names
+
+First, deploy your v2 functions with temporary new names:
+
+```typescript
+// Original v1 function
+export const validateOnlineCode = functions.https.onCall(...);
+
+// Temporary v2 function with a new name
+export const validateOnlineCodeV2 = onCall(...);
+```
+
+### 2. Update Client Code
+
+Update your client code to use the new v2 functions:
+
+```typescript
+// In your client code, change from:
+const validateCode = httpsCallable(functions, "validateOnlineCode");
+
+// To:
+const validateCode = httpsCallable(functions, "validateOnlineCodeV2");
+```
+
+### 3. Delete v1 Functions
+
+Once you've verified the v2 functions are working properly, delete the v1 functions:
+
+```bash
+firebase functions:delete validateOnlineCode validateQRCheckIn generateOnlineOrderCodes getAdminStats addAdminRole
+```
+
+### 4. Rename v2 Functions
+
+Finally, rename the v2 functions back to their original names:
+
+```typescript
+// Change from temporary name
+export const validateOnlineCodeV2 = onCall(...);
+
+// Back to original name
+export const validateOnlineCode = onCall(...);
+```
+
+And redeploy.
+
+## Recommended Migration Order
+
+1. `createInitialAdmin` (HTTP function)
+2. `addAdminRole` (Callable function)
+3. `getAdminStats` (Callable function)
+4. `generateOnlineOrderCodes` (Callable function)
+5. `validateQRCheckIn` (Callable function)
+6. `validateOnlineCode` (Callable function)
+
+## Benefits of v2 Functions
+
+- **Better Performance**: Faster cold starts and scaling
+- **Improved Security**: Enhanced authentication and authorization
+- **Cost Efficiency**: More flexible billing and better control
+- **TypeScript Support**: Better type safety with modern syntax
+- **Environment Variables**: Direct support for .env files
+
+## Configuration Changes
+
+The v2 migration included several important changes:
+
+1. **Environment Variables**:
+
+   - Added dotenv package
+   - Created .env file for secure configuration
+   - Updated .gitignore to protect sensitive data
+
+2. **Error Handling**:
+
+   - Updated to use new HttpsError
+
+3. **Request Handling**:
+   - Updated to use CallableRequest pattern
+
+## Deployment Verification
+
+After each function migration, verify it works properly:
+
+```bash
+# Test the function
+firebase functions:shell
+> myFunction({param: 'value'})
+
+# Check logs
+firebase functions:log --only myFunction
+```
