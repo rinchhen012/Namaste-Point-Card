@@ -4,9 +4,10 @@ import { useTranslation } from 'react-i18next';
 import Layout from '../components/Layout/Layout';
 import { useAuth } from '../contexts/AuthContext';
 import usePointAnimation from '../hooks/usePointAnimation';
+import { getAvailableRewards } from '../firebase/services';
 
 const HomePage: React.FC = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const { currentUser, userProfile } = useAuth();
   const { PointAnimationComponent } = usePointAnimation();
@@ -14,12 +15,31 @@ const HomePage: React.FC = () => {
   // Track points for animation
   const [animatedPoints, setAnimatedPoints] = useState<number>(0);
   const prevPointsRef = useRef<number | null>(null);
+  const [minPointsNeeded, setMinPointsNeeded] = useState<number | null>(null);
 
   useEffect(() => {
     if (!currentUser) {
       navigate('/login');
     }
   }, [currentUser, navigate]);
+
+  // Fetch the available rewards to determine minimum points needed
+  useEffect(() => {
+    const fetchMinPointsNeeded = async () => {
+      try {
+        const rewards = await getAvailableRewards();
+        if (rewards.length > 0) {
+          // Find the cheapest reward available
+          const minPoints = Math.min(...rewards.map(reward => reward.pointsCost));
+          setMinPointsNeeded(minPoints);
+        }
+      } catch (error) {
+        console.error('Error fetching rewards:', error);
+      }
+    };
+
+    fetchMinPointsNeeded();
+  }, []);
 
   // Handle point animation when points change
   useEffect(() => {
@@ -59,6 +79,18 @@ const HomePage: React.FC = () => {
     return null;
   }
 
+  // Determine appropriate progress bar message
+  const hasEnoughPoints = minPointsNeeded !== null && userProfile.points >= minPointsNeeded;
+  const pointsNeededForReward = minPointsNeeded !== null ? Math.max(0, minPointsNeeded - userProfile.points) : 0;
+
+  // Calculate progress percentage toward minimum reward
+  const progressPercent = minPointsNeeded !== null && minPointsNeeded > 0
+    ? Math.min(100, (userProfile.points / minPointsNeeded) * 100)
+    : 0;
+
+  // Check if current language is Japanese
+  const isJapanese = i18n.language === 'ja' || i18n.language.startsWith('ja-');
+
   return (
     <Layout title={t('app.name')}>
       {PointAnimationComponent}
@@ -78,15 +110,37 @@ const HomePage: React.FC = () => {
             <span className="ml-2 text-gray-500">{t('common.points')}</span>
           </div>
 
-          <div className="mt-4 bg-gray-100 rounded-full h-4 overflow-hidden">
-            <div
-              className="bg-primary h-4 rounded-full transition-all duration-500 ease-out"
-              style={{ width: `${Math.min(100, (userProfile.points % 10) * 10)}%` }}
-            ></div>
+          <div className="mt-4 mb-6 relative">
+            {/* Progress Bar */}
+            <div className="bg-gray-100 rounded-full h-4 overflow-hidden relative">
+              <div
+                className={`${hasEnoughPoints ? 'bg-green-500' : 'bg-primary'} h-4 rounded-full transition-all duration-500 ease-out`}
+                style={{ width: hasEnoughPoints ? '100%' : `${progressPercent}%` }}
+              ></div>
+            </div>
+
+            {/* Redemption Banner - now with direct language check */}
+            {hasEnoughPoints && (
+              <div
+                className="absolute right-0 bottom-0 transform translate-y-full cursor-pointer"
+                onClick={() => navigate('/coupons')}
+              >
+                <div className="redeem-banner bounce-animation">
+                  <div className="banner-arrow banner-arrow-top"></div>
+                  <span className="text-white text-xs font-bold text-center block px-2 py-1">
+                    {isJapanese ? 'クーポン' : 'Coupon'}
+                  </span>
+                </div>
+              </div>
+            )}
+
+            {/* Instruction Text - now with direct language check */}
+            {!hasEnoughPoints && (
+              <p className="text-xs mt-2 text-gray-500">
+                {pointsNeededForReward} {isJapanese ? 'ポイントでクーポン獲得可能' : 'more points until coupon'}
+              </p>
+            )}
           </div>
-          <p className="text-xs text-gray-500 mt-2">
-            {10 - (userProfile.points % 10)} {t('common.points')} {t('rewards.insufficientPoints', { more: 10 - (userProfile.points % 10) })}
-          </p>
         </div>
 
         <div className="w-full grid gap-4 mb-6">
@@ -136,5 +190,87 @@ const HomePage: React.FC = () => {
     </Layout>
   );
 };
+
+// Add these CSS animations to the global style or consider adding them to a global stylesheet
+const styleSheet = document.createElement("style");
+styleSheet.textContent = `
+  @keyframes minimal-pulse {
+    0% {
+      opacity: 0.9;
+    }
+    50% {
+      opacity: 1;
+    }
+    100% {
+      opacity: 0.9;
+    }
+  }
+
+  .minimal-pulse {
+    animation: minimal-pulse 3s ease infinite;
+  }
+
+  @keyframes subtle-bounce {
+    0%, 100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(-3px);
+    }
+  }
+
+  .bounce-animation {
+    animation: banner-pop-in 0.7s ease-out, subtle-bounce 2s ease-in-out 0.7s infinite;
+  }
+
+  .redeem-banner {
+    position: relative;
+    background-color: #22c55e;
+    border-radius: 4px;
+    margin-top: 5px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    transform-origin: top center;
+    max-width: 120px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transition: box-shadow 0.2s ease;
+    padding: 1px 0;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+  }
+
+  .banner-arrow {
+    position: absolute;
+    width: 0;
+    height: 0;
+    border-left: 6px solid transparent;
+    border-right: 6px solid transparent;
+  }
+
+  .banner-arrow-top {
+    top: -5px;
+    right: 10px;
+    left: auto;
+    transform: none;
+    border-bottom: 6px solid #22c55e;
+  }
+
+  @keyframes banner-pop-in {
+    0% {
+      transform: translateY(-30%);
+      opacity: 0;
+    }
+    100% {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+
+  .absolute.cursor-pointer:hover .redeem-banner {
+    transform: translateY(2px);
+    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.2);
+  }
+`;
+document.head.appendChild(styleSheet);
 
 export default HomePage;

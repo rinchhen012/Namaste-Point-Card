@@ -195,14 +195,27 @@ const CouponsPage: React.FC = () => {
       );
     }
 
+    // Sort coupons: redeemable ones first, then by points cost (lowest to highest)
+    const sortedCoupons = [...coupons].sort((a, b) => {
+      // First check if user can redeem a but not b
+      const canRedeemA = canRedeemCoupon(a.pointsCost);
+      const canRedeemB = canRedeemCoupon(b.pointsCost);
+
+      if (canRedeemA && !canRedeemB) return -1;
+      if (!canRedeemA && canRedeemB) return 1;
+
+      // If both are redeemable or both are not, sort by pointsCost
+      return a.pointsCost - b.pointsCost;
+    });
+
     return (
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        {coupons.map((coupon, index) => (
+        {sortedCoupons.map((coupon, index) => (
           <div
             key={coupon.id}
             className={`bg-white rounded-lg shadow p-4 w-full box-border overflow-hidden flex flex-col justify-between h-full ${
               animatedCoupons ? 'animate-slide-up-fade' : 'opacity-0'
-            }`}
+            } ${canRedeemCoupon(coupon.pointsCost) ? 'border-l-4 border-green-500' : ''}`}
             style={{
               animationDelay: animatedCoupons ? `${index * 0.1}s` : '0s'
             }}
