@@ -614,6 +614,7 @@ const AdminRewards: React.FC = () => {
                       src={formData.imageUrl}
                       alt="Current reward"
                       className="h-24 w-full object-contain rounded border border-gray-300"
+                      loading="lazy"
                     />
                   </div>
                 )}

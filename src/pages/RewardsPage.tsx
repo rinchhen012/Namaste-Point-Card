@@ -212,6 +212,7 @@ const RewardsPage: React.FC = () => {
                         src={reward.imageUrl}
                         alt={reward.name[userProfile.language]}
                         className="w-full h-40 object-contain"
+                        loading="lazy"
                       />
                     </div>
                   )}

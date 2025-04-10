@@ -279,6 +279,7 @@ const RedemptionPage: React.FC = () => {
                   src={reward.imageUrl}
                   alt={reward.name[userProfile.language]}
                   className="w-full h-36 object-contain"
+                  loading="lazy"
                   onError={(e) => {
                     e.currentTarget.style.display = 'none';
                   }}
@@ -352,6 +353,7 @@ const RedemptionPage: React.FC = () => {
                   src={redemption.imageUrl}
                   alt={userProfile.language === 'ja' && 'rewardNameJa' in redemption ? redemption.rewardNameJa : redemption.rewardName}
                   className="w-full h-36 object-contain"
+                  loading="lazy"
                   onError={(e) => {
                     e.currentTarget.style.display = 'none';
                   }}
