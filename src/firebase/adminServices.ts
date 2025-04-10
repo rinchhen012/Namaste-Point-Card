@@ -582,10 +582,11 @@ export async function deleteExistingReward(rewardId: string): Promise<void> {
  */
 export async function uploadRewardImage(file: File, rewardId?: string): Promise<string> {
   try {
-    // If rewardId is not provided (new reward), use a timestamp
+    // Store images in the public folder which has different security rules
+    // Using a more reliable path structure with public directory
     const path = rewardId
-      ? `rewards/${rewardId}/${file.name}`
-      : `rewards/new_${Date.now()}_${file.name}`;
+      ? `public/rewards/${rewardId}/${file.name}`
+      : `public/rewards/temp_${Date.now()}_${file.name}`;
 
     const storageRef = ref(storage, path);
     await uploadBytes(storageRef, file);
