@@ -168,7 +168,7 @@ const RedemptionPage: React.FC = () => {
 
     try {
       const result = await redeemReward(currentUser.uid, reward.id, reward.type);
-      
+
       // After redemption, fetch the complete redemption data
       if (result.redemptionId) {
         const fullRedemptionData = await getRedemption(result.redemptionId);
@@ -191,7 +191,7 @@ const RedemptionPage: React.FC = () => {
 
       // Show animation for points reduction
       animatePoints(pointsChange);
-      
+
       // Show success animation
       showRewardAnimation(t('rewards.redeemSuccess'));
       setShowSuccessAnimation(true);
@@ -239,10 +239,10 @@ const RedemptionPage: React.FC = () => {
     try {
       console.log('Marking redemption as used with ID:', redemptionId);
       await markRedemptionAsUsed(redemptionId);
-      
+
       // Show animation before navigating away
       showRewardAnimation(t('rewards.usedSuccess'));
-      
+
       // Wait for animation to complete before navigating
       setTimeout(() => {
         navigate('/rewards');
@@ -358,7 +358,7 @@ const RedemptionPage: React.FC = () => {
               <span className="text-gray-600 whitespace-nowrap">{t('rewards.redeemed')}:</span>
               <span className="font-medium text-gray-800 text-right overflow-hidden text-ellipsis whitespace-nowrap min-w-0">
                 {
-                  'createdAt' in redemption && redemption.createdAt instanceof Date 
+                  'createdAt' in redemption && redemption.createdAt instanceof Date
                     ? formatDateTime(redemption.createdAt, userProfile.language)
                     : 'createdAt' in redemption && typeof redemption.createdAt?.toDate === 'function'
                       ? formatDateTime(redemption.createdAt.toDate(), userProfile.language)

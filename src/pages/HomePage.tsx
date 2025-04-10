@@ -10,7 +10,7 @@ const HomePage: React.FC = () => {
   const navigate = useNavigate();
   const { currentUser, userProfile } = useAuth();
   const { PointAnimationComponent } = usePointAnimation();
-  
+
   // Track points for animation
   const [animatedPoints, setAnimatedPoints] = useState<number>(0);
   const prevPointsRef = useRef<number | null>(null);
@@ -20,27 +20,27 @@ const HomePage: React.FC = () => {
       navigate('/login');
     }
   }, [currentUser, navigate]);
-  
+
   // Handle point animation when points change
   useEffect(() => {
     if (!userProfile) return;
-    
+
     // Initialize on first load
     if (prevPointsRef.current === null) {
       prevPointsRef.current = userProfile.points;
       setAnimatedPoints(userProfile.points);
       return;
     }
-    
+
     // If points changed, animate from previous to new value
     if (prevPointsRef.current !== userProfile.points) {
       setAnimatedPoints(prevPointsRef.current);
-      
+
       // Animate to new value
       const step = userProfile.points > prevPointsRef.current ? 1 : -1;
       const interval = setInterval(() => {
         setAnimatedPoints(prev => {
-          if ((step > 0 && prev >= userProfile.points) || 
+          if ((step > 0 && prev >= userProfile.points) ||
               (step < 0 && prev <= userProfile.points)) {
             clearInterval(interval);
             return userProfile.points;
@@ -48,9 +48,9 @@ const HomePage: React.FC = () => {
           return prev + step;
         });
       }, 50); // Adjust speed as needed
-      
+
       prevPointsRef.current = userProfile.points;
-      
+
       return () => clearInterval(interval);
     }
   }, [userProfile?.points]);

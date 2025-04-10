@@ -24,7 +24,7 @@ const usePointAnimation = (): UsePointAnimationReturn => {
       const timer = setTimeout(() => {
         setAnimation(null);
       }, 1000);
-      
+
       return () => clearTimeout(timer);
     }
   }, [animation]);
@@ -32,7 +32,7 @@ const usePointAnimation = (): UsePointAnimationReturn => {
   return {
     animatePoints,
     PointAnimationComponent: animation ? (
-      <PointAnimation 
+      <PointAnimation
         key={animation.key}
         value={animation.value}
         isPositive={animation.isPositive}
@@ -41,4 +41,4 @@ const usePointAnimation = (): UsePointAnimationReturn => {
   };
 };
 
-export default usePointAnimation; 
+export default usePointAnimation;

@@ -14,12 +14,12 @@ const useRewardAnimation = (): UseRewardAnimationReturn => {
     // Increment counter to ensure uniqueness even if called in same millisecond
     counterRef.current += 1;
     const uniqueKey = `${Date.now()}-${counterRef.current}`;
-    
+
     setAnimation({
       message,
       key: uniqueKey
     });
-    
+
     // Automatically clear animation after it completes
     setTimeout(() => {
       setAnimation(null);
@@ -29,7 +29,7 @@ const useRewardAnimation = (): UseRewardAnimationReturn => {
   return {
     showRewardAnimation,
     RewardAnimationComponent: animation ? (
-      <RewardAnimation 
+      <RewardAnimation
         key={animation.key}
         message={animation.message}
       />
@@ -37,4 +37,4 @@ const useRewardAnimation = (): UseRewardAnimationReturn => {
   };
 };
 
-export default useRewardAnimation; 
+export default useRewardAnimation;

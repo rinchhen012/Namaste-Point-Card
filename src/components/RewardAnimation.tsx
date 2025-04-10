@@ -6,18 +6,18 @@ interface RewardAnimationProps {
 
 const RewardAnimation: React.FC<RewardAnimationProps> = ({ message = 'Reward Redeemed!' }) => {
   const [visible, setVisible] = useState(true);
-  
+
   useEffect(() => {
     // Hide after animation completes
     const timer = setTimeout(() => {
       setVisible(false);
     }, 1500);
-    
+
     return () => clearTimeout(timer);
   }, []);
-  
+
   if (!visible) return null;
-  
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none">
       <div className="bg-white px-6 py-4 rounded-lg shadow-lg animate-slide-up-fade">
@@ -32,4 +32,4 @@ const RewardAnimation: React.FC<RewardAnimationProps> = ({ message = 'Reward Red
   );
 };
 
-export default RewardAnimation; 
+export default RewardAnimation;

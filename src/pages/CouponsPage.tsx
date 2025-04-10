@@ -72,7 +72,7 @@ const CouponsPage: React.FC = () => {
         setCoupons(couponsData as Coupon[]);
         const redemptionsData = await getUserRedemptions(currentUser.uid);
         setActiveRedemptions(redemptionsData as Redemption[]);
-        
+
         // Set a delay before showing animations to ensure DOM is ready
         setTimeout(() => {
           setAnimatedCoupons(true);
@@ -142,7 +142,7 @@ const CouponsPage: React.FC = () => {
                     className={`bg-white rounded-lg shadow p-4 cursor-pointer flex flex-col justify-between transition hover:shadow-md h-full ${
                       animatedCoupons ? 'animate-slide-up-fade' : 'opacity-0'
                     }`}
-                    style={{ 
+                    style={{
                       animationDelay: animatedCoupons ? `${index * 0.1}s` : '0s'
                     }}
                   >
@@ -189,12 +189,12 @@ const CouponsPage: React.FC = () => {
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {coupons.map((coupon, index) => (
-                <div 
-                  key={coupon.id} 
+                <div
+                  key={coupon.id}
                   className={`bg-white rounded-lg shadow p-4 w-full box-border overflow-hidden flex flex-col justify-between h-full ${
                     animatedCoupons ? 'animate-slide-up-fade' : 'opacity-0'
                   }`}
-                  style={{ 
+                  style={{
                     animationDelay: animatedCoupons ? `${index * 0.1}s` : '0s'
                   }}
                 >
