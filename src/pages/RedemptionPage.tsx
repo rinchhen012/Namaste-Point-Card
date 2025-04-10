@@ -273,6 +273,18 @@ const RedemptionPage: React.FC = () => {
             <h2 className="text-xl font-medium mb-4 text-center">
               {t('rewards.confirmRedeem', { reward: reward.name[userProfile.language], points: reward.pointsCost })}
             </h2>
+            {reward.imageUrl && (
+              <div className="mb-4 rounded-lg overflow-hidden">
+                <img
+                  src={reward.imageUrl}
+                  alt={reward.name[userProfile.language]}
+                  className="w-full h-auto object-cover"
+                  onError={(e) => {
+                    e.currentTarget.style.display = 'none';
+                  }}
+                />
+              </div>
+            )}
             <p className="text-gray-600 text-center mb-6">
               {reward.description[userProfile.language]}
             </p>
@@ -334,6 +346,18 @@ const RedemptionPage: React.FC = () => {
             <h2 className="text-xl font-semibold mb-2 text-gray-800 break-words overflow-hidden">
               {userProfile.language === 'ja' && 'rewardNameJa' in redemption ? redemption.rewardNameJa : redemption.rewardName}
             </h2>
+            {'imageUrl' in redemption && redemption.imageUrl && (
+              <div className="mb-4 rounded-lg overflow-hidden">
+                <img
+                  src={redemption.imageUrl}
+                  alt={userProfile.language === 'ja' && 'rewardNameJa' in redemption ? redemption.rewardNameJa : redemption.rewardName}
+                  className="w-full h-auto object-cover"
+                  onError={(e) => {
+                    e.currentTarget.style.display = 'none';
+                  }}
+                />
+              </div>
+            )}
             <p className="text-sm text-gray-600 mb-4 break-words overflow-hidden">
               {redemption.rewardDescription}
             </p>

@@ -735,7 +735,8 @@ export const redeemReward = async (userId: string, rewardId: string, rewardType:
       rewardDescription: reward.description.en,
       pointsCost: reward.pointsCost,
       createdAt: new Date(),
-      code: newRedemption.code
+      code: newRedemption.code,
+      imageUrl: reward.imageUrl
     };
   }
 
@@ -797,7 +798,8 @@ export const redeemReward = async (userId: string, rewardId: string, rewardType:
       pointsCost: reward.pointsCost,
       createdAt: Timestamp.now(),
       expiresAt: Timestamp.fromDate(expirationDate),
-      used: false
+      used: false,
+      imageUrl: reward.imageUrl
     });
 
     // Deduct points from user
@@ -826,7 +828,8 @@ export const redeemReward = async (userId: string, rewardId: string, rewardType:
       rewardDescription: reward.description.en,
       pointsCost: reward.pointsCost,
       createdAt: new Date(),
-      code: `COUPON-${Math.random().toString(36).substring(2, 8).toUpperCase()}`
+      code: `COUPON-${Math.random().toString(36).substring(2, 8).toUpperCase()}`,
+      imageUrl: reward.imageUrl
     };
   } catch (error) {
     throw error;
@@ -849,7 +852,8 @@ export const getUserRedemptions = async (userId: string): Promise<Redemption[]> 
         pointsCost: r.pointsCost || 0,
         createdAt: r.createdAt,
         expiresAt: r.expiresAt,
-        used: r.used
+        used: r.used,
+        imageUrl: r.imageUrl || 'https://via.placeholder.com/150'
       }));
   }
 
@@ -885,7 +889,8 @@ export const getUserRedemptions = async (userId: string): Promise<Redemption[]> 
         pointsCost: data.pointsCost || 0,
         createdAt: data.createdAt,
         expiresAt: data.expiresAt,
-        used: data.used
+        used: data.used,
+        imageUrl: data.imageUrl
       });
     });
 
@@ -914,7 +919,8 @@ export const getRedemption = async (redemptionId: string): Promise<Redemption | 
       pointsCost: redemption.pointsCost || 0,
       createdAt: redemption.createdAt,
       expiresAt: redemption.expiresAt,
-      used: redemption.used
+      used: redemption.used,
+      imageUrl: redemption.imageUrl || 'https://via.placeholder.com/150'
     };
   }
 
@@ -938,7 +944,8 @@ export const getRedemption = async (redemptionId: string): Promise<Redemption | 
       pointsCost: data.pointsCost || 0,
       createdAt: data.createdAt,
       expiresAt: data.expiresAt,
-      used: data.used
+      used: data.used,
+      imageUrl: data.imageUrl
     };
   } catch (error) {
     console.error('Error getting redemption:', error);

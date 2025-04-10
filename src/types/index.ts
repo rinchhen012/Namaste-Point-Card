@@ -42,6 +42,7 @@ export interface Redemption {
   createdAt: Timestamp;
   expiresAt: Timestamp;
   used: boolean;
+  imageUrl?: string;
 }
 
 export interface OnlineOrderCode {
@@ -108,6 +109,7 @@ export type RedemptionResult = {
   pointsCost?: number;
   createdAt?: Date;
   code?: string;
+  imageUrl?: string;
 };
 
 // Admin Types
