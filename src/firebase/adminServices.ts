@@ -684,7 +684,7 @@ export async function generateNewOnlineOrderCodes(
   expiryDays: number
 ): Promise<string[]> {
   try {
-    const generateFunction = httpsCallable(functions, 'generateOnlineOrderCodesV2');
+    const generateFunction = httpsCallable(functions, 'generateOnlineOrderCodes');
     const result = await generateFunction({
       count,
       prefix,
@@ -741,7 +741,7 @@ export async function getDashboardStats(): Promise<{
 }> {
   try {
     // Call the Cloud Function
-    const statsFunction = httpsCallable(functions, 'getAdminStatsV2');
+    const statsFunction = httpsCallable(functions, 'getAdminStats');
     const result = await statsFunction();
     return result.data as any;
   } catch (error) {
@@ -756,7 +756,7 @@ export async function addAdminRole(email: string): Promise<{
   error?: string;
 }> {
   try {
-    const addAdminFunction = httpsCallable(functions, 'addAdminRoleV2');
+    const addAdminFunction = httpsCallable(functions, 'addAdminRole');
     const result = await addAdminFunction({ email });
     return result.data as any;
   } catch (error) {

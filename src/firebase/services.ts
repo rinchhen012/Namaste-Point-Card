@@ -549,7 +549,7 @@ export async function validateOnlineOrderCode(code: string): Promise<{
 }> {
   try {
     // Call the Cloud Function
-    const validateFunction = httpsCallable(functions, 'validateOnlineCodeV2'); // Updated to use v2 function
+    const validateFunction = httpsCallable(functions, 'validateOnlineCode'); // Renamed back to original
     const result = await validateFunction({ code });
     return result.data as any;
   } catch (error) {
@@ -569,7 +569,7 @@ export async function validateQRCode(
 }> {
   try {
     // Call the Cloud Function
-    const validateFunction = httpsCallable(functions, 'validateQRCheckInV2'); // Updated to use v2 function
+    const validateFunction = httpsCallable(functions, 'validateQRCheckIn'); // Renamed back to original
     const result = await validateFunction({ qrCode, latitude, longitude });
     return result.data as any;
   } catch (error) {
