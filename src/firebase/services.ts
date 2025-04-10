@@ -542,109 +542,41 @@ export const setUserLanguage = async (userId: string, language: 'en' | 'ja') => 
 };
 
 // Points Management
-export const validateOnlineOrderCode = async (code: string, userId: string) => {
-  const validateCode = httpsCallable(functions, 'validateOnlineCode');
+export async function validateOnlineOrderCode(code: string): Promise<{
+  success: boolean;
+  message: string;
+  points?: number;
+}> {
   try {
-    const result = await validateCode({ code, userId });
-    return result.data;
+    // Call the Cloud Function
+    const validateFunction = httpsCallable(functions, 'validateOnlineCodeV2'); // Updated to use v2 function
+    const result = await validateFunction({ code });
+    return result.data as any;
   } catch (error) {
-    throw error;
+    console.error('Error validating online order code:', error);
+    return { success: false, message: 'An error occurred while validating code' };
   }
-};
+}
 
-export const validateQRCheckIn = async (
-  userId: string,
+export async function validateQRCode(
   qrCode: string,
   latitude: number,
   longitude: number
-) => {
+): Promise<{
+  success: boolean;
+  message: string;
+  distance?: number;
+}> {
   try {
-    // Check if this is dev mode with mock auth
-    if (import.meta.env.DEV && import.meta.env.VITE_USE_MOCK_AUTH === 'true') {
-      console.log('Using mock QR validation in dev mode');
-
-      // Simulate checking timestamp of last visit
-      const lastVisit = mockData.pointsHistory.find(
-        h => h.userId === userId &&
-             h.source === 'in_store_visit' &&
-             h.metadata?.qrCode === qrCode
-      );
-
-      if (lastVisit) {
-        const lastVisitTime = lastVisit.timestamp.toDate();
-        const hoursElapsed = (Date.now() - lastVisitTime.getTime()) / (1000 * 60 * 60);
-
-        if (hoursElapsed < 22) {
-          return {
-            success: false,
-            message: 'You have already checked in today. Please come back tomorrow!'
-          };
-        }
-      }
-
-      // Add to mock points history
-      mockData.pointsHistory.push({
-        id: 'history-' + Date.now(),
-        userId,
-        points: 1,
-        type: 'earn',
-        source: 'in_store_visit',
-        timestamp: { toDate: () => new Date() },
-        metadata: { latitude, longitude, qrCode }
-      });
-
-      return { success: true, message: 'Check-in successful! 1 point added.' };
-    }
-
-    // For production, call the Cloud Function
-    const validateQRCheckIn = httpsCallable(functions, 'validateQRCheckIn');
-    const result = await validateQRCheckIn({
-      userId,
-      qrCode,
-      latitude,
-      longitude
-    });
-
-    // If validation succeeds, update user's points and record visit
-    if (result.data && (result.data as any).success) {
-      const userRef = doc(db, 'users', userId);
-
-      // Get the current user data
-      const userDoc = await getDoc(userRef);
-      if (!userDoc.exists()) {
-        throw new Error('User not found');
-      }
-
-      // Update user profile with points and timestamp
-      await updateDoc(userRef, {
-        points: increment(1),
-        lastQRCheckIn: {
-          timestamp: Timestamp.now(),
-          qrCode: qrCode
-        }
-      });
-
-      // Record in points history
-      await addDoc(collection(db, 'points_history'), {
-        userId,
-        points: 1,
-        type: 'earn',
-        source: 'in_store_visit',
-        timestamp: Timestamp.now(),
-        metadata: {
-          latitude,
-          longitude,
-          qrCode
-        }
-      });
-    }
-
-    return result.data;
+    // Call the Cloud Function
+    const validateFunction = httpsCallable(functions, 'validateQRCheckInV2'); // Updated to use v2 function
+    const result = await validateFunction({ qrCode, latitude, longitude });
+    return result.data as any;
   } catch (error) {
-    console.error('Error validating QR check-in:', error);
-    throw error;
+    console.error('Error validating QR code:', error);
+    return { success: false, message: 'An error occurred while validating QR code' };
   }
-};
+}
 
 // Rewards and Redemption
 export async function getRewards(): Promise<Reward[]> {

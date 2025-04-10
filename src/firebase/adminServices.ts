@@ -684,9 +684,13 @@ export async function generateNewOnlineOrderCodes(
   expiryDays: number
 ): Promise<string[]> {
   try {
-    // Call the Cloud Function
-    const generateFunction = httpsCallable(functions, 'generateOnlineOrderCodes');
-    const result = await generateFunction({ count, prefix, pointsAwarded, expiryDays });
+    const generateFunction = httpsCallable(functions, 'generateOnlineOrderCodesV2');
+    const result = await generateFunction({
+      count,
+      prefix,
+      pointsAwarded,
+      expiryDays
+    });
     const data = result.data as { success: boolean; codes: string[] };
 
     if (!data.success) {
@@ -737,11 +741,29 @@ export async function getDashboardStats(): Promise<{
 }> {
   try {
     // Call the Cloud Function
-    const statsFunction = httpsCallable(functions, 'getAdminStats');
+    const statsFunction = httpsCallable(functions, 'getAdminStatsV2');
     const result = await statsFunction();
     return result.data as any;
   } catch (error) {
     console.error('Error getting dashboard stats:', error);
     throw error;
+  }
+}
+
+export async function addAdminRole(email: string): Promise<{
+  success: boolean;
+  result?: string;
+  error?: string;
+}> {
+  try {
+    const addAdminFunction = httpsCallable(functions, 'addAdminRoleV2');
+    const result = await addAdminFunction({ email });
+    return result.data as any;
+  } catch (error) {
+    console.error('Error adding admin role:', error);
+    return {
+      success: false,
+      error: error.message || 'An error occurred while adding admin role'
+    };
   }
 }
