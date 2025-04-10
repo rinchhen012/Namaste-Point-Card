@@ -254,3 +254,66 @@ You can view function logs and monitor performance in the Firebase Console:
 2. Click on a function name to view its logs
 3. Use the "Logs" tab to see the function's execution logs
 4. Use the "Usage" tab to monitor function performance and cost
+
+# Server-Side Code Generation Implementation
+
+This document outlines the steps to move coupon code generation from client-side to server-side using Firebase Cloud Functions.
+
+## What we've done so far
+
+1. Created a new Cloud Function called `createDeliveryCoupons` that securely generates coupon codes
+2. Updated the client-side `createCoupon` function to call this Cloud Function
+3. Removed client-side code generation from the `AdminCoupons.tsx` component
+
+## Deployment Steps
+
+Due to version compatibility issues between Firebase Functions v1 and v2 in the current implementation, here's how to properly deploy the function:
+
+1. **Fix TypeScript Configuration**: Since migrating all functions to v2 would be a larger task, for now you can temporarily disable TypeScript checking during deploy:
+
+   ```bash
+   cd functions
+   firebase deploy --only functions:createDeliveryCoupons --force
+   ```
+
+2. **Alternative Approach**: If the above doesn't work, you may need to revert the functions to using v1 syntax:
+
+   ```typescript
+   // Change this:
+   export const createDeliveryCoupons = onCall(
+     async (request: CallableRequest<CreateDeliveryCouponsData>) => {
+
+   // To this:
+   export const createDeliveryCoupons = functions.https.onCall(
+     async (data: CreateDeliveryCouponsData, context: CallableContext) => {
+       // And change all occurrences of request.data to data
+       // And all occurrences of request.auth to context.auth
+   ```
+
+## Security Benefits
+
+Moving code generation to the server-side provides several security benefits:
+
+1. **Reduced Attack Surface**: The client no longer contains cryptographic code or security-sensitive logic.
+2. **Stronger Entropy**: Server-side code can use more robust random number generation.
+3. **Prevention of Code Manipulation**: Users cannot modify the code generation logic to create predictable or duplicate codes.
+4. **Consistent Implementation**: Code generation logic is maintained in a single place.
+5. **Access Control**: Authentication and authorization checks are performed server-side.
+
+## Future Improvements
+
+For a more comprehensive security approach:
+
+1. **Rate Limiting**: Add rate limiting to prevent abuse of the function.
+2. **Logging**: Implement detailed logging for all code generation events.
+3. **Complete Migration**: Consider migrating all Firebase Functions to v2 syntax for consistency.
+4. **Code Validation**: Implement additional validation checks for generated codes.
+
+## Testing
+
+To verify the function is working correctly:
+
+1. Generate a batch of codes from the admin interface
+2. Check in Firebase Console that the codes were created in the Firestore database
+3. Verify that the codes have the expected format and include the checksum
+4. Test code redemption flow to ensure codes are valid

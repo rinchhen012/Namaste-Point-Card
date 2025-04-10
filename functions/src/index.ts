@@ -9,6 +9,7 @@
 
 import * as functions from 'firebase-functions';
 import * as admin from 'firebase-admin';
+import { onCall, CallableRequest } from 'firebase-functions/v2/https';
 
 // Import the CallableContext type
 type CallableContext = functions.https.CallableContext;
@@ -44,6 +45,13 @@ interface GetAdminStatsData {
 
 interface AddAdminRoleData {
   email: string;
+}
+
+// Interface for createDeliveryCoupons function
+interface CreateDeliveryCouponsData {
+  codePrefix: string;
+  count: number;
+  expiryDays: number;
 }
 
 /**
@@ -562,3 +570,132 @@ export const createInitialAdmin = functions.https.onRequest(async (req, res) => 
     res.status(500).send('Error creating admin user');
   }
 });
+
+/**
+ * Calculate a validation checksum for a coupon code
+ * Returns a single character (0-9, A-Z) checksum
+ */
+function calculateChecksum(code: string): string {
+  // Simple but effective algorithm:
+  // 1. Sum the character codes
+  // 2. Add the position-weighted values (multiply each char code by its position)
+  // 3. Apply a prime multiplier for additional complexity
+  // 4. Take modulo 36 to get a value 0-35
+  // 5. Convert to character (0-9, A-Z)
+
+  let sum = 0;
+  const PRIME = 17; // A prime number for better distribution
+
+  for (let i = 0; i < code.length; i++) {
+    const charCode = code.charCodeAt(i);
+    sum += charCode + (charCode * (i + 1));
+  }
+
+  sum = (sum * PRIME) % 36;
+
+  // Convert to alphanumeric character (0-9, A-Z)
+  if (sum < 10) {
+    return sum.toString();
+  } else {
+    // 10 -> A, 11 -> B, etc.
+    return String.fromCharCode(55 + sum); // ASCII 'A' is 65, so 55 + 10 = 65
+  }
+}
+
+/**
+ * Creates delivery coupon codes with a checksum character
+ * Admin only function
+ */
+export const createDeliveryCoupons = onCall(
+  async (request: CallableRequest<CreateDeliveryCouponsData>) => {
+    // Check if user is authenticated and is an admin
+    if (!request.auth) {
+      return { success: false, message: 'Authentication required' };
+    }
+
+    try {
+      // Check if user is an admin
+      const userDoc = await db.collection('users').doc(request.auth.uid).get();
+      if (!userDoc.exists || userDoc.data()?.role !== 'admin') {
+        return { success: false, message: 'Admin access required' };
+      }
+
+      const { codePrefix, count, expiryDays } = request.data;
+
+      if (count < 1 || count > 300) {
+        return { success: false, message: 'Count must be between 1 and 300' };
+      }
+
+      const generatedCodes: string[] = []; // Array to store generated codes
+      const batch = [];
+
+      // Query existing codes to check for uniqueness
+      const couponsRef = db.collection('delivery_coupons');
+      const existingCodesSnapshot = await couponsRef.get();
+      const existingCodes = new Set<string>();
+
+      // Build a set of existing codes for efficient lookups
+      existingCodesSnapshot.forEach(doc => {
+        const data = doc.data();
+        existingCodes.add(data.code);
+      });
+
+      // Calculate expiry date
+      const expiryDate = new Date();
+      expiryDate.setDate(expiryDate.getDate() + expiryDays);
+      const expiresAt = admin.firestore.Timestamp.fromDate(expiryDate);
+
+      for (let i = 0; i < count; i++) {
+        let fullCode: string;
+        let isUnique = false;
+
+        // Keep generating new codes until we get a unique one
+        while (!isUnique) {
+          // Generate secure random string
+          const buffer = require('crypto').randomBytes(4);
+          const randomString = buffer.toString('hex').substring(0, 8).toUpperCase();
+
+          const baseCode = `${codePrefix}-${randomString}`;
+
+          // Calculate and append the checksum character
+          const checksum = calculateChecksum(baseCode);
+          fullCode = `${baseCode}${checksum}`;
+
+          // Check if this code already exists in the database or was just generated
+          isUnique = !existingCodes.has(fullCode) && !generatedCodes.includes(fullCode);
+        }
+
+        generatedCodes.push(fullCode!); // Store the generated unique code
+        existingCodes.add(fullCode!); // Add to our set to prevent duplicates within this batch
+
+        // Create coupon document
+        const couponData = {
+          code: fullCode!,
+          used: false,
+          createdAt: admin.firestore.FieldValue.serverTimestamp(),
+          expiresAt: expiresAt
+        };
+
+        // Add to batch operations
+        batch.push(db.collection('delivery_coupons').add(couponData));
+      }
+
+      // Execute all adds in parallel
+      await Promise.all(batch);
+
+      return {
+        success: true,
+        count,
+        codes: generatedCodes,
+        message: `Generated ${count} delivery coupon codes`
+      };
+    } catch (error) {
+      console.error('Error creating delivery coupons:', error);
+      return {
+        success: false,
+        message: 'An error occurred while generating coupon codes',
+        error: String(error)
+      };
+    }
+  }
+);

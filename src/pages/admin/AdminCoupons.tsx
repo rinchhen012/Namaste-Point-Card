@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { getCoupons, createCoupon, deactivateCoupon, verifyCodeChecksum } from '../../firebase/adminServices';
+import { getCoupons, createCoupon, deactivateCoupon } from '../../firebase/adminServices';
 import PrintableCodes from '../../components/Admin/PrintableCodes';
 import { formatDate, formatDateTime, isDateExpired } from '../../utils/dateUtils';
 import ConfirmationModal from '../../components/Admin/ConfirmationModal';
@@ -19,26 +19,6 @@ type SortDirection = 'ascending' | 'descending';
 interface SortConfig {
   key: keyof Coupon | 'status' | null; // Allow sorting by status text too
   direction: SortDirection;
-}
-
-// This will be imported from adminServices.ts
-// If typing/importing fails, define locally as fallback
-function calculateChecksum(code: string): string {
-  let sum = 0;
-  const PRIME = 17;
-
-  for (let i = 0; i < code.length; i++) {
-    const charCode = code.charCodeAt(i);
-    sum += charCode + (charCode * (i + 1));
-  }
-
-  sum = (sum * PRIME) % 36;
-
-  if (sum < 10) {
-    return sum.toString();
-  } else {
-    return String.fromCharCode(55 + sum);
-  }
 }
 
 const AdminCoupons: React.FC = () => {
@@ -158,78 +138,29 @@ const AdminCoupons: React.FC = () => {
       setLoading(true);
       setError(null);
 
-      // In development mode, mock the creation
-      if (import.meta.env.DEV && import.meta.env.VITE_USE_MOCK_AUTH === 'true') {
-        const newCoupons: Coupon[] = [];
-
-        for (let i = 0; i < formData.codeCount; i++) {
-          // Always use cryptographically secure random generation
-          const array = new Uint8Array(4);
-          window.crypto.getRandomValues(array);
-          const randomString = Array.from(array, byte =>
-            ('0' + (byte & 0xFF).toString(16)).slice(-2)
-          ).join('').substring(0, 8).toUpperCase();
-
-          // Create base code
-          const code = `${formData.codePrefix}-${randomString}`;
-
-          // Calculate and append checksum
-          const checksum = calculateChecksum(code);
-          const fullCode = `${code}${checksum}`;
-
-          // Calculate expiry date
-          const expiryDate = new Date();
-          expiryDate.setDate(expiryDate.getDate() + formData.expiryDays);
-
-          // Create mock coupon
-          const coupon = {
-            id: `mock-${i}-${Date.now()}`,
-            code: fullCode,
-            used: false,
-            createdAt: new Date(),
-            expiresAt: expiryDate,
-            usedBy: null,
-            usedAt: null
-          };
-
-          newCoupons.push(coupon as Coupon);
-          // No need to track generatedCodes separately with new approach
-        }
-
-        console.log("MOCK: Generated codes:", newCoupons);
-        setCoupons([...newCoupons, ...coupons]);
-        // Restore setting state for newly generated codes/view
-        const generatedDataForPrint = newCoupons.map(c => ({ code: c.code, expiresAt: c.expiresAt }));
-        setNewlyGeneratedCodes(generatedDataForPrint);
-        setShowPrintableView(true);
-        setShowCreateForm(false);
-        console.log("MOCK: Set showPrintableView=true, newlyGeneratedCodes length=", generatedDataForPrint.length);
-        setLoading(false);
-        return;
-      }
-
-      // For production, create real coupons
+      // Call the createCoupon function which now uses a Cloud Function
       const result = await createCoupon(
         formData.codePrefix,
         parseInt(formData.codeCount.toString()),
         parseInt(formData.expiryDays.toString())
       );
 
-      console.log("PROD: Result from createCoupon:", result);
+      console.log("Result from createCoupon:", result);
 
       if (result && result.codes) {
-        // Restore setting state for newly generated codes/view
+        // Setup the data for the printable view
         const expiryDate = new Date(Date.now() + parseInt(formData.expiryDays.toString()) * 24 * 60 * 60 * 1000);
         const generatedDataForPrint = result.codes.map((code: string) => ({
           code,
           expiresAt: expiryDate
         }));
-        console.log("PROD: Generated codes array for print:", generatedDataForPrint);
+
+        console.log("Generated codes array for print:", generatedDataForPrint);
         setNewlyGeneratedCodes(generatedDataForPrint);
         setShowPrintableView(true);
       }
 
-      // Reload coupons to get the newly created ones (includes the latest)
+      // Reload coupons to get the newly created ones
       const couponsData = await getCoupons();
       setCoupons(couponsData as Coupon[]);
       setShowCreateForm(false);

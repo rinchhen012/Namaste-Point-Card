@@ -12,13 +12,17 @@ import {
   Timestamp,
   limit as firestoreLimit,
   serverTimestamp,
-  startAfter as firestoreStartAfter
+  startAfter as firestoreStartAfter,
+  getFirestore,
+  writeBatch
 } from 'firebase/firestore';
 import { httpsCallable } from 'firebase/functions';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, functions, storage } from './config';
 import { UserProfile, Reward, Redemption, OnlineOrderCode, PointsTransaction } from '../types';
 import crypto from 'crypto';
+import { getFunctions } from 'firebase/functions';
+import { app } from './config';
 
 // Dashboard statistics
 export const getStatsData = async () => {
@@ -245,80 +249,47 @@ export const createCoupon = async (
   expiryDays: number
 ) => {
   try {
-    const batch = [];
-    const generatedCodes: string[] = []; // Array to store generated codes
+    // For development mode with mock authentication, provide mock implementation
+    if (import.meta.env.DEV && import.meta.env.VITE_USE_MOCK_AUTH === 'true') {
+      console.log('MOCK: Creating coupons in development mode');
 
-    // Query existing codes to check for uniqueness
-    const couponsRef = collection(db, 'delivery_coupons');
-    const existingCodesSnapshot = await getDocs(couponsRef);
-    const existingCodes = new Set<string>();
+      const mockCodes = [];
+      // Generate mock codes (similar to production but only for UI testing)
+      for (let i = 0; i < count; i++) {
+        const array = new Uint8Array(4);
+        window.crypto.getRandomValues(array);
+        const randomString = Array.from(array, byte =>
+          ('0' + (byte & 0xFF).toString(16)).slice(-2)
+        ).join('').substring(0, 8).toUpperCase();
 
-    // Build a set of existing codes for efficient lookups
-    existingCodesSnapshot.forEach(doc => {
-      const data = doc.data();
-      existingCodes.add(data.code);
-    });
+        // Create base code
+        const code = `${codePrefix}-${randomString}`;
 
-    for (let i = 0; i < count; i++) {
-      let code: string;
-      let fullCode: string;
-      let isUnique = false;
-
-      // Keep generating new codes until we get a unique one
-      while (!isUnique) {
-        // Always use cryptographically secure random generation
-        let randomString;
-        // For browser or Node environment
-        if (typeof window !== 'undefined' && window.crypto) {
-          // Browser environment
-          const array = new Uint8Array(4);
-          window.crypto.getRandomValues(array);
-          randomString = Array.from(array, byte =>
-            ('0' + (byte & 0xFF).toString(16)).slice(-2)
-          ).join('').substring(0, 8).toUpperCase();
-        } else {
-          // Node.js environment
-          const buffer = crypto.randomBytes(4);
-          randomString = buffer.toString('hex').substring(0, 8).toUpperCase();
-        }
-
-        code = `${codePrefix}-${randomString}`;
-
-        // Calculate and append the checksum character
+        // Calculate and append checksum
         const checksum = calculateChecksum(code);
-        fullCode = `${code}${checksum}`;
+        const fullCode = `${code}${checksum}`;
 
-        // Check if this code already exists in the database or was just generated
-        isUnique = !existingCodes.has(fullCode) && !generatedCodes.includes(fullCode);
+        mockCodes.push(fullCode);
       }
 
-      generatedCodes.push(fullCode!); // Store the generated unique code
-      existingCodes.add(fullCode!); // Add to our set to prevent duplicates within this batch
-
-      // Calculate expiry date
-      const expiryDate = new Date();
-      expiryDate.setDate(expiryDate.getDate() + expiryDays);
-
-      // Create coupon document
-      const couponData = {
-        code: fullCode!,
-        used: false,
-        createdAt: serverTimestamp(),
-        expiresAt: Timestamp.fromDate(expiryDate)
+      return {
+        success: true,
+        count,
+        codes: mockCodes
       };
-
-      // Add to batch
-      batch.push(addDoc(collection(db, 'delivery_coupons'), couponData));
     }
 
-    // Execute all adds
-    await Promise.all(batch);
+    // For production, call the Cloud Function
+    const createDeliveryCoupons = httpsCallable(functions, 'createDeliveryCoupons');
 
-    return {
-      success: true,
+    const result = await createDeliveryCoupons({
+      codePrefix,
       count,
-      codes: generatedCodes // Include the array of codes in the return value
-    };
+      expiryDays
+    });
+
+    // Return the result from the Cloud Function
+    return result.data;
   } catch (error) {
     console.error('Error creating coupons:', error);
     throw error;
