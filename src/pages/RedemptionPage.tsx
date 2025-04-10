@@ -399,11 +399,6 @@ const RedemptionPage: React.FC = () => {
               <span className="font-medium text-gray-800 text-right overflow-hidden text-ellipsis whitespace-nowrap min-w-0">
                 {redemption.pointsCost || 0}
               </span>
-
-              <span className="text-gray-600 whitespace-nowrap">{t('rewards.code')}:</span>
-              <span className="font-medium text-gray-800 font-mono break-all text-right overflow-hidden min-w-0">
-                {'code' in redemption ? redemption.code : ''}
-              </span>
             </div>
 
             {!isUsed && !isExpired && (
