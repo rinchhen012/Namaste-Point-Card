@@ -27,8 +27,8 @@ const AdminCoupons: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [formData, setFormData] = useState({
-    codePrefix: 'DEL',
-    codeCount: 10,
+    codePrefix: 'D',
+    codeCount: 30,
     expiryDays: 60,
     generateRandomCodes: true
   });
@@ -522,7 +522,7 @@ const AdminCoupons: React.FC = () => {
                 value={formData.codePrefix}
                 onChange={handleInputChange}
                 className="w-full p-2 border rounded-md"
-                placeholder="DEL"
+                placeholder="D"
               />
               <p className="text-gray-500 text-xs mt-1">
                 Prefix for the coupon code (e.g. DEL for delivery)
@@ -542,6 +542,7 @@ const AdminCoupons: React.FC = () => {
                 onChange={handleInputChange}
                 min="1"
                 max="300"
+                placeholder="30"
                 className="w-full p-2 border rounded-md"
               />
             </div>
