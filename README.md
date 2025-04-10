@@ -46,7 +46,7 @@ Points can be redeemed for various rewards applicable to future in-store visits 
 - **PWA Features:** Service Workers, Web App Manifest
 - **Localization:** i18next
 - **QR Scanning:** Camera API, qr-scanner
-- **Cloud Functions:** Node.js v16, TypeScript
+- **Cloud Functions:** Node.js v20, TypeScript
 
 ## Project Structure
 
@@ -94,7 +94,7 @@ namaste-point-card/
 
 ### Prerequisites
 
-- Node.js (v16 or later)
+- Node.js (v20 or later)
 - npm or yarn
 - Firebase project with:
   - Authentication enabled (email/password, Google, Apple)
@@ -162,7 +162,7 @@ For production deployment instructions, see [DEPLOY-GUIDE.md](DEPLOY-GUIDE.md).
 
 This application uses Firebase Cloud Functions for several key features:
 
-1. **validateOnlineCode**: Validates online order codes and awards points
+1. **validateOnlineOrderCode**: Validates online order codes and awards points
 2. **checkInAtStore**: Verifies user location for in-store visits
 3. **generateOnlineOrderCodes**: Admin function to create new order codes
 4. **getAdminStats**: Provides statistics for the admin dashboard
@@ -172,10 +172,10 @@ This application uses Firebase Cloud Functions for several key features:
 ### Firestore Collections
 
 - **users**: User profiles and point balances
-- **unique_order_codes**: Delivery order codes for validation
+- **online_order_codes**: Delivery order codes for validation
 - **rewards**: Available rewards and their details
 - **redemptions**: Records of redeemed rewards
-- **points_history**: History of point transactions
+- **points_transactions**: History of point transactions
 - **admin_activity**: Logs of administrative actions
 
 ## License

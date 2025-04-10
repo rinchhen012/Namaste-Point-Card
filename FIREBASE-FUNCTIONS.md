@@ -5,7 +5,7 @@ This guide explains how to set up and deploy Firebase Functions for the Namaste 
 ## Prerequisites
 
 1. A Firebase project on the Blaze (pay-as-you-go) plan
-2. Node.js v16 or later
+2. Node.js v20 or later
 3. Firebase CLI installed: `npm install -g firebase-tools`
 
 ## Local Development Setup
@@ -45,8 +45,11 @@ firebase functions:shell
 Example function calls:
 
 ```js
-// Test validateOnlineCode function
-validateOnlineCode({ code: "NAMASTE-SAMPLE1" }, { auth: { uid: "user123" } });
+// Test validateOnlineOrderCode function
+validateOnlineOrderCode(
+  { code: "NAMASTE-SAMPLE1" },
+  { auth: { uid: "user123" } }
+);
 
 // Test checkInAtStore function
 checkInAtStore(
@@ -95,14 +98,14 @@ firebase deploy --only functions
 To deploy a specific function:
 
 ```bash
-firebase deploy --only functions:validateOnlineCode
+firebase deploy --only functions:validateOnlineOrderCode
 ```
 
 ## Function Details
 
 ### Customer-Facing Functions
 
-#### validateOnlineCode
+#### validateOnlineOrderCode
 
 This function validates an online order code and awards points to the user.
 
@@ -162,8 +165,11 @@ import { functions } from "./firebase/config";
 // Validate an online order code
 const validateCode = async (code: string) => {
   try {
-    const validateOnlineCode = httpsCallable(functions, "validateOnlineCode");
-    const result = await validateOnlineCode({ code });
+    const validateOnlineOrderCode = httpsCallable(
+      functions,
+      "validateOnlineOrderCode"
+    );
+    const result = await validateOnlineOrderCode({ code });
     const data = result.data as {
       success: boolean;
       message: string;
@@ -341,10 +347,10 @@ First, deploy your v2 functions with temporary new names:
 
 ```typescript
 // Original v1 function
-export const validateOnlineCode = functions.https.onCall(...);
+export const validateOnlineOrderCode = functions.https.onCall(...);
 
 // Temporary v2 function with a new name
-export const validateOnlineCodeV2 = onCall(...);
+export const validateOnlineOrderCodeV2 = onCall(...);
 ```
 
 ### 2. Update Client Code
@@ -353,10 +359,10 @@ Update your client code to use the new v2 functions:
 
 ```typescript
 // In your client code, change from:
-const validateCode = httpsCallable(functions, "validateOnlineCode");
+const validateCode = httpsCallable(functions, "validateOnlineOrderCode");
 
 // To:
-const validateCode = httpsCallable(functions, "validateOnlineCodeV2");
+const validateCode = httpsCallable(functions, "validateOnlineOrderCodeV2");
 ```
 
 ### 3. Delete v1 Functions
@@ -364,7 +370,7 @@ const validateCode = httpsCallable(functions, "validateOnlineCodeV2");
 Once you've verified the v2 functions are working properly, delete the v1 functions:
 
 ```bash
-firebase functions:delete validateOnlineCode validateQRCheckIn generateOnlineOrderCodes getAdminStats addAdminRole
+firebase functions:delete validateOnlineOrderCode validateQRCheckIn generateOnlineOrderCodes getAdminStats addAdminRole
 ```
 
 ### 4. Rename v2 Functions
@@ -373,10 +379,10 @@ Finally, rename the v2 functions back to their original names:
 
 ```typescript
 // Change from temporary name
-export const validateOnlineCodeV2 = onCall(...);
+export const validateOnlineOrderCodeV2 = onCall(...);
 
 // Back to original name
-export const validateOnlineCode = onCall(...);
+export const validateOnlineOrderCode = onCall(...);
 ```
 
 And redeploy.
@@ -388,7 +394,7 @@ And redeploy.
 3. `getAdminStats` (Callable function)
 4. `generateOnlineOrderCodes` (Callable function)
 5. `validateQRCheckIn` (Callable function)
-6. `validateOnlineCode` (Callable function)
+6. `validateOnlineOrderCode` (Callable function)
 
 ## Benefits of v2 Functions
 

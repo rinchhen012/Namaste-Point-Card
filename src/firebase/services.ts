@@ -549,7 +549,7 @@ export async function validateOnlineOrderCode(code: string): Promise<{
 }> {
   try {
     // Call the Cloud Function
-    const validateFunction = httpsCallable(functions, 'validateOnlineCode'); // Renamed back to original
+    const validateFunction = httpsCallable(functions, 'validateOnlineOrderCode'); // Updated to match renamed function
     const result = await validateFunction({ code });
     return result.data as any;
   } catch (error) {
