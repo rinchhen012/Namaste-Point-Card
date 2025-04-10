@@ -5,6 +5,7 @@ import Layout from '../components/Layout/Layout';
 import { useAuth } from '../contexts/AuthContext';
 import { getAvailableRewards, getUserRedemptions } from '../firebase/services';
 import { Coupon, Redemption } from '../types';
+import usePointAnimation from '../hooks/usePointAnimation';
 
 // --- START RedemptionTimer Component ---
 interface RedemptionTimerProps {
@@ -48,11 +49,13 @@ const CouponsPage: React.FC = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { currentUser, userProfile } = useAuth();
+  const { PointAnimationComponent } = usePointAnimation();
 
   const [coupons, setCoupons] = useState<Coupon[]>([]);
   const [activeRedemptions, setActiveRedemptions] = useState<Redemption[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [animatedCoupons, setAnimatedCoupons] = useState<boolean>(false);
 
   useEffect(() => {
     if (!currentUser) {
@@ -69,6 +72,11 @@ const CouponsPage: React.FC = () => {
         setCoupons(couponsData as Coupon[]);
         const redemptionsData = await getUserRedemptions(currentUser.uid);
         setActiveRedemptions(redemptionsData as Redemption[]);
+        
+        // Set a delay before showing animations to ensure DOM is ready
+        setTimeout(() => {
+          setAnimatedCoupons(true);
+        }, 100);
       } catch (err) {
         console.error('Error fetching coupons data:', err);
         setError(t('common.error'));
@@ -98,6 +106,7 @@ const CouponsPage: React.FC = () => {
 
   return (
     <Layout title={t('rewards.coupons')}>
+      {PointAnimationComponent}
       <div className="w-full max-w-3xl mx-auto px-4 py-6 space-y-8 overflow-hidden">
         {/* Current Points Display Section */}
         <div className="bg-gradient-to-r from-primary to-primary-dark text-white rounded-xl shadow-lg p-5">
@@ -124,13 +133,18 @@ const CouponsPage: React.FC = () => {
           <section>
             <h2 className="text-xl font-semibold mb-4 text-gray-800">{t('rewards.activeRedemptions')}</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {activeRedemptions.map((redemption) => {
+              {activeRedemptions.map((redemption, index) => {
                 const expiryDate = typeof redemption.expiresAt.toDate === 'function' ? redemption.expiresAt.toDate() : redemption.expiresAt;
                 return (
                   <div
                     key={redemption.id}
                     onClick={() => handleViewRedemption(redemption)}
-                    className="bg-white rounded-lg shadow p-4 cursor-pointer flex flex-col justify-between transition hover:shadow-md h-full"
+                    className={`bg-white rounded-lg shadow p-4 cursor-pointer flex flex-col justify-between transition hover:shadow-md h-full ${
+                      animatedCoupons ? 'animate-slide-up-fade' : 'opacity-0'
+                    }`}
+                    style={{ 
+                      animationDelay: animatedCoupons ? `${index * 0.1}s` : '0s'
+                    }}
                   >
                     <div className="flex-grow mb-2 overflow-hidden">
                       <h3 className="font-semibold text-gray-800 truncate">{redemption.rewardName}</h3>
@@ -174,8 +188,16 @@ const CouponsPage: React.FC = () => {
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {coupons.map((coupon) => (
-                <div key={coupon.id} className="bg-white rounded-lg shadow p-4 w-full box-border overflow-hidden flex flex-col justify-between h-full">
+              {coupons.map((coupon, index) => (
+                <div 
+                  key={coupon.id} 
+                  className={`bg-white rounded-lg shadow p-4 w-full box-border overflow-hidden flex flex-col justify-between h-full ${
+                    animatedCoupons ? 'animate-slide-up-fade' : 'opacity-0'
+                  }`}
+                  style={{ 
+                    animationDelay: animatedCoupons ? `${index * 0.1}s` : '0s'
+                  }}
+                >
                   <div className="mb-3 min-w-0 flex-grow">
                     <h3 className="font-semibold text-lg text-gray-800 mb-1 break-words line-clamp-2 overflow-hidden">
                       {typeof coupon.name === 'string'

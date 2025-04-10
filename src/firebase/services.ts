@@ -700,12 +700,14 @@ export const redeemReward = async (userId: string, rewardId: string, rewardType:
       userId,
       rewardId,
       rewardName: reward.name.en,
+      rewardNameJa: reward.name.ja || reward.name.en,
       rewardDescription: reward.description.en,
       rewardType,
       pointsCost: reward.pointsCost,
       createdAt: { toDate: () => new Date() },
       expiresAt: { toDate: () => expirationDate },
-      used: false
+      used: false,
+      code: `COUPON-${Math.random().toString(36).substring(2, 8).toUpperCase()}`
     };
 
     // Add to mock redemptions
@@ -729,7 +731,11 @@ export const redeemReward = async (userId: string, rewardId: string, rewardType:
       redemptionId: newRedemption.id,
       expiresAt: expirationDate,
       rewardName: reward.name.en,
-      rewardDescription: reward.description.en
+      rewardNameJa: reward.name.ja || reward.name.en,
+      rewardDescription: reward.description.en,
+      pointsCost: reward.pointsCost,
+      createdAt: new Date(),
+      code: newRedemption.code
     };
   }
 
@@ -785,6 +791,7 @@ export const redeemReward = async (userId: string, rewardId: string, rewardType:
       userId,
       rewardId,
       rewardName: reward.name.en,
+      rewardNameJa: reward.name.ja || reward.name.en,
       rewardDescription: reward.description.en,
       rewardType,
       pointsCost: reward.pointsCost,
@@ -815,7 +822,11 @@ export const redeemReward = async (userId: string, rewardId: string, rewardType:
       redemptionId: redemptionRef.id,
       expiresAt: expirationDate,
       rewardName: reward.name.en,
-      rewardDescription: reward.description.en
+      rewardNameJa: reward.name.ja || reward.name.en,
+      rewardDescription: reward.description.en,
+      pointsCost: reward.pointsCost,
+      createdAt: new Date(),
+      code: `COUPON-${Math.random().toString(36).substring(2, 8).toUpperCase()}`
     };
   } catch (error) {
     throw error;

@@ -103,7 +103,11 @@ export type RedemptionResult = {
   redemptionId: string;
   expiresAt: Date;
   rewardName: string;
+  rewardNameJa?: string;
   rewardDescription: string;
+  pointsCost?: number;
+  createdAt?: Date;
+  code?: string;
 };
 
 // Admin Types

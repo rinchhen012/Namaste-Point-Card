@@ -7,6 +7,8 @@ import { useAuth } from '../contexts/AuthContext';
 import { redeemReward, markRedemptionAsUsed, getRedemption, getReward } from '../firebase/services';
 import { Reward, Redemption, RedemptionResult } from '../types';
 import { formatDate, formatDateTime, isDateExpired } from '../utils/dateUtils';
+import useRewardAnimation from '../hooks/useRewardAnimation';
+import usePointAnimation from '../hooks/usePointAnimation';
 
 const RedemptionPage: React.FC = () => {
   const { t } = useTranslation();
@@ -14,12 +16,15 @@ const RedemptionPage: React.FC = () => {
   const location = useLocation();
   const { id } = useParams<{ id: string }>();
   const { currentUser, userProfile, setUserProfile } = useAuth();
+  const { showRewardAnimation, RewardAnimationComponent } = useRewardAnimation();
+  const { animatePoints, PointAnimationComponent } = usePointAnimation();
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [redemption, setRedemption] = useState<RedemptionResult | Redemption | null>(null);
   const [countdown, setCountdown] = useState<string>('');
   const [confirming, setConfirming] = useState(false);
+  const [showSuccessAnimation, setShowSuccessAnimation] = useState(false);
 
   // Get reward or existing redemption from location state
   const reward = location.state?.reward as Reward;
@@ -163,13 +168,33 @@ const RedemptionPage: React.FC = () => {
 
     try {
       const result = await redeemReward(currentUser.uid, reward.id, reward.type);
-      setRedemption(result);
+      
+      // After redemption, fetch the complete redemption data
+      if (result.redemptionId) {
+        const fullRedemptionData = await getRedemption(result.redemptionId);
+        if (fullRedemptionData) {
+          setRedemption(fullRedemptionData);
+        } else {
+          // Fallback to result if full data not available
+          setRedemption(result);
+        }
+      } else {
+        setRedemption(result);
+      }
 
       // Update user profile points
+      const pointsChange = -reward.pointsCost;
       setUserProfile({
         ...userProfile,
-        points: userProfile.points - reward.pointsCost
+        points: userProfile.points + pointsChange
       });
+
+      // Show animation for points reduction
+      animatePoints(pointsChange);
+      
+      // Show success animation
+      showRewardAnimation(t('rewards.redeemSuccess'));
+      setShowSuccessAnimation(true);
 
       setConfirming(false);
     } catch (err: any) {
@@ -214,11 +239,17 @@ const RedemptionPage: React.FC = () => {
     try {
       console.log('Marking redemption as used with ID:', redemptionId);
       await markRedemptionAsUsed(redemptionId);
-      navigate('/rewards');
+      
+      // Show animation before navigating away
+      showRewardAnimation(t('rewards.usedSuccess'));
+      
+      // Wait for animation to complete before navigating
+      setTimeout(() => {
+        navigate('/rewards');
+      }, 1500);
     } catch (err) {
       console.error('Error marking redemption as used:', err);
       setError(t('common.error'));
-    } finally {
       setLoading(false);
     }
   };
@@ -235,6 +266,8 @@ const RedemptionPage: React.FC = () => {
         showBackButton
         onBack={() => navigate('/coupons')}
       >
+        {PointAnimationComponent}
+        {RewardAnimationComponent}
         <div className="w-full max-w-3xl mx-auto px-4 py-6 space-y-8 overflow-hidden">
           <div className="bg-white rounded-lg shadow-md p-6 max-w-sm mx-auto overflow-hidden">
             <h2 className="text-xl font-medium mb-4 text-center">
@@ -260,7 +293,7 @@ const RedemptionPage: React.FC = () => {
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                   </svg>
                 ) : null}
-                {loading ? t('common.processing') : t('rewards.redeem')}
+                {loading ? "processing" : t('rewards.redeem')}
               </button>
               <button
                 onClick={() => navigate('/coupons')}
@@ -294,10 +327,12 @@ const RedemptionPage: React.FC = () => {
         showBackButton
         onBack={() => navigate('/coupons')}
       >
+        {PointAnimationComponent}
+        {RewardAnimationComponent}
         <div className="w-full max-w-sm mx-auto px-4 py-6 overflow-hidden">
-          <div className="bg-white rounded-lg shadow-md p-6 max-w-xs mx-auto overflow-hidden w-full">
+          <div className={`bg-white rounded-lg shadow-md p-6 max-w-xs mx-auto overflow-hidden w-full ${showSuccessAnimation ? 'animate-slide-up-fade' : ''}`}>
             <h2 className="text-xl font-semibold mb-2 text-gray-800 break-words overflow-hidden">
-              {redemption.rewardName}
+              {userProfile.language === 'ja' && 'rewardNameJa' in redemption ? redemption.rewardNameJa : redemption.rewardName}
             </h2>
             <p className="text-sm text-gray-600 mb-4 break-words overflow-hidden">
               {redemption.rewardDescription}
@@ -322,7 +357,13 @@ const RedemptionPage: React.FC = () => {
             <div className="grid grid-cols-[auto,1fr] gap-x-4 gap-y-2 mb-6 text-sm min-w-0">
               <span className="text-gray-600 whitespace-nowrap">{t('rewards.redeemed')}:</span>
               <span className="font-medium text-gray-800 text-right overflow-hidden text-ellipsis whitespace-nowrap min-w-0">
-                {'createdAt' in redemption && formatDateTime(redemption.createdAt, userProfile.language)}
+                {
+                  'createdAt' in redemption && redemption.createdAt instanceof Date 
+                    ? formatDateTime(redemption.createdAt, userProfile.language)
+                    : 'createdAt' in redemption && typeof redemption.createdAt?.toDate === 'function'
+                      ? formatDateTime(redemption.createdAt.toDate(), userProfile.language)
+                      : '-'
+                }
               </span>
 
               <span className="text-gray-600 whitespace-nowrap">{t('rewards.expires')}:</span>
@@ -332,12 +373,12 @@ const RedemptionPage: React.FC = () => {
 
               <span className="text-gray-600 whitespace-nowrap">{t('common.points')}:</span>
               <span className="font-medium text-gray-800 text-right overflow-hidden text-ellipsis whitespace-nowrap min-w-0">
-                {redemption.pointsCost}
+                {redemption.pointsCost || 0}
               </span>
 
               <span className="text-gray-600 whitespace-nowrap">{t('rewards.code')}:</span>
               <span className="font-medium text-gray-800 font-mono break-all text-right overflow-hidden min-w-0">
-                {redemption.code}
+                {'code' in redemption ? redemption.code : ''}
               </span>
             </div>
 
@@ -353,7 +394,7 @@ const RedemptionPage: React.FC = () => {
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                   </svg>
                 ) : null}
-                {loading ? t('common.processing') : t('rewards.markAsUsed')}
+                {loading ? "processing" : t('rewards.markAsUsed')}
               </button>
             )}
 

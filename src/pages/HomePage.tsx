@@ -1,19 +1,59 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import Layout from '../components/Layout/Layout';
 import { useAuth } from '../contexts/AuthContext';
+import usePointAnimation from '../hooks/usePointAnimation';
 
 const HomePage: React.FC = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { currentUser, userProfile } = useAuth();
+  const { PointAnimationComponent } = usePointAnimation();
+  
+  // Track points for animation
+  const [animatedPoints, setAnimatedPoints] = useState<number>(0);
+  const prevPointsRef = useRef<number | null>(null);
 
   useEffect(() => {
     if (!currentUser) {
       navigate('/login');
     }
   }, [currentUser, navigate]);
+  
+  // Handle point animation when points change
+  useEffect(() => {
+    if (!userProfile) return;
+    
+    // Initialize on first load
+    if (prevPointsRef.current === null) {
+      prevPointsRef.current = userProfile.points;
+      setAnimatedPoints(userProfile.points);
+      return;
+    }
+    
+    // If points changed, animate from previous to new value
+    if (prevPointsRef.current !== userProfile.points) {
+      setAnimatedPoints(prevPointsRef.current);
+      
+      // Animate to new value
+      const step = userProfile.points > prevPointsRef.current ? 1 : -1;
+      const interval = setInterval(() => {
+        setAnimatedPoints(prev => {
+          if ((step > 0 && prev >= userProfile.points) || 
+              (step < 0 && prev <= userProfile.points)) {
+            clearInterval(interval);
+            return userProfile.points;
+          }
+          return prev + step;
+        });
+      }, 50); // Adjust speed as needed
+      
+      prevPointsRef.current = userProfile.points;
+      
+      return () => clearInterval(interval);
+    }
+  }, [userProfile?.points]);
 
   if (!currentUser || !userProfile) {
     return null;
@@ -21,6 +61,7 @@ const HomePage: React.FC = () => {
 
   return (
     <Layout title={t('app.name')}>
+      {PointAnimationComponent}
       <div className="flex flex-col items-center p-4">
         <div className="text-center mb-6">
           <h2 className="text-xl font-medium text-gray-700">
@@ -31,13 +72,15 @@ const HomePage: React.FC = () => {
         <div className="w-full bg-white rounded-xl shadow-md p-6 mb-6">
           <p className="text-gray-600 text-sm mb-2">{t('home.currentPoints')}</p>
           <div className="flex items-baseline">
-            <span className="text-4xl font-bold text-primary">{userProfile.points}</span>
+            <span className={`text-4xl font-bold text-primary ${userProfile.points !== animatedPoints ? 'animate-pulse-scale' : ''}`}>
+              {animatedPoints}
+            </span>
             <span className="ml-2 text-gray-500">{t('common.points')}</span>
           </div>
 
-          <div className="mt-4 bg-gray-100 rounded-full h-4">
+          <div className="mt-4 bg-gray-100 rounded-full h-4 overflow-hidden">
             <div
-              className="bg-primary h-4 rounded-full"
+              className="bg-primary h-4 rounded-full transition-all duration-500 ease-out"
               style={{ width: `${Math.min(100, (userProfile.points % 10) * 10)}%` }}
             ></div>
           </div>

@@ -173,7 +173,9 @@
     "noRewards": "No coupons available at the moment.",
     "noRedemptions": "No active coupons.",
     "redemptionComplete": "Redemption Complete!",
-    "errorProcessingRedemption": "Error processing redemption."
+    "errorProcessingRedemption": "Error processing redemption.",
+    "redeemSuccess": "Redeemed",
+    "usedSuccess": "Coupon Used"
   },
   "profile": {
     "myProfile": "My Profile",
