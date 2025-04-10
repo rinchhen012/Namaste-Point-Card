@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useAdminAuth } from '../../contexts/AdminAuthContext';
 
 const AdminLayout: React.FC = () => {
@@ -17,8 +17,11 @@ const AdminLayout: React.FC = () => {
     navigate('/login');
   };
 
-  const isActive = (path: string) => {
-    return location.pathname === path;
+  const navLinkClasses = ({ isActive }: { isActive: boolean }): string => {
+    const baseClasses = "block px-4 py-2 rounded-md mb-1 transition-colors duration-150 ease-in-out";
+    const activeClasses = "border-l-4 border-orange-500 bg-orange-100 text-orange-800";
+    const inactiveClasses = "text-gray-700 hover:bg-gray-100";
+    return `${baseClasses} ${isActive ? activeClasses : inactiveClasses}`;
   };
 
   return (
@@ -57,50 +60,42 @@ const AdminLayout: React.FC = () => {
           } transition-transform duration-300 ease-in-out md:flex flex-col z-10 h-screen md:h-auto`}
         >
           <nav className="mt-5 px-2">
-            <Link
-              to="/"
-              className={`block px-4 py-2 rounded-md mb-1 ${
-                isActive('/')
-                  ? 'bg-orange-600 text-white'
-                  : 'text-gray-700 hover:bg-gray-100'
-              }`}
+            <NavLink
+              to="."
+              end
+              className={navLinkClasses}
               onClick={() => setMenuOpen(false)}
             >
               Dashboard
-            </Link>
-            <Link
-              to="/admin/coupons"
-              className={`block px-4 py-2 rounded-md mb-1 ${
-                isActive('/admin/coupons') || isActive('/admin/rewards')
-                  ? 'bg-orange-600 text-white'
-                  : 'text-gray-700 hover:bg-gray-100'
-              }`}
+            </NavLink>
+            <NavLink
+              to="coupons"
+              className={navLinkClasses}
               onClick={() => setMenuOpen(false)}
             >
-              Coupons
-            </Link>
-            <Link
+              Delivery Coupons
+            </NavLink>
+            <NavLink
+              to="rewards"
+              className={navLinkClasses}
+              onClick={() => setMenuOpen(false)}
+            >
+              Rewards Management
+            </NavLink>
+            <NavLink
               to="/users"
-              className={`block px-4 py-2 rounded-md mb-1 ${
-                isActive('/users')
-                  ? 'bg-orange-600 text-white'
-                  : 'text-gray-700 hover:bg-gray-100'
-              }`}
+              className={navLinkClasses}
               onClick={() => setMenuOpen(false)}
             >
               Users
-            </Link>
-            <Link
+            </NavLink>
+            <NavLink
               to="/settings"
-              className={`block px-4 py-2 rounded-md mb-1 ${
-                isActive('/settings')
-                  ? 'bg-orange-600 text-white'
-                  : 'text-gray-700 hover:bg-gray-100'
-              }`}
+              className={navLinkClasses}
               onClick={() => setMenuOpen(false)}
             >
               Settings
-            </Link>
+            </NavLink>
           </nav>
         </aside>
 

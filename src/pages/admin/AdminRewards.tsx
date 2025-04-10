@@ -288,9 +288,16 @@ const AdminRewards: React.FC = () => {
           <div className="animate-spin rounded-full h-12 w-12 border-4 border-orange-500 border-t-transparent"></div>
         </div>
       ) : (
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {rewards.map(reward => (
-            <div key={reward.id} className="bg-white rounded-lg shadow-md overflow-hidden flex flex-col">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          {rewards.map((reward) => (
+            <div
+              key={reward.id}
+              className={`bg-white rounded-lg shadow-md overflow-hidden flex flex-col border-2 ${
+                reward.active
+                  ? 'border-green-500 bg-green-50'
+                  : 'border-gray-200'
+              }`}
+            >
               {reward.imageUrl && (
                 <div className="w-full h-40 bg-gray-200 flex-shrink-0">
                   <img
@@ -302,14 +309,7 @@ const AdminRewards: React.FC = () => {
               )}
               <div className="p-4 flex-grow">
                 <div className="flex justify-between items-start mb-2">
-                  <h2 className="text-lg font-semibold text-gray-800 flex-1 mr-2">{reward.name}</h2>
-                  <span className={`flex-shrink-0 px-2 py-1 text-xs rounded-full ${
-                    reward.active
-                      ? 'bg-green-100 text-green-800'
-                      : 'bg-gray-100 text-gray-800'
-                  }`}>
-                    {reward.active ? 'Active' : 'Inactive'}
-                  </span>
+                  <h2 className="text-lg font-semibold text-gray-800 flex-1 mr-2 truncate">{reward.name}</h2>
                 </div>
                 <p className="text-sm text-gray-600 mb-1">{reward.nameJa}</p>
                 <p className="text-sm text-gray-700 mb-2 line-clamp-3">{reward.description}</p>

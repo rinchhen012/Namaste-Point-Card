@@ -201,6 +201,7 @@ export const createCoupon = async (
 ) => {
   try {
     const batch = [];
+    const generatedCodes: string[] = []; // Array to store generated codes
 
     for (let i = 0; i < count; i++) {
       // Generate a random code if enabled
@@ -209,6 +210,7 @@ export const createCoupon = async (
         : (i + 1).toString().padStart(5, '0');
 
       const code = `${codePrefix}-${randomString}`;
+      generatedCodes.push(code); // Store the generated code
 
       // Calculate expiry date
       const expiryDate = new Date();
@@ -231,7 +233,8 @@ export const createCoupon = async (
 
     return {
       success: true,
-      count
+      count,
+      codes: generatedCodes // Include the array of codes in the return value
     };
   } catch (error) {
     console.error('Error creating coupons:', error);
@@ -241,11 +244,12 @@ export const createCoupon = async (
 
 export const deactivateCoupon = async (couponId: string) => {
   try {
-    // Set expiry date to now (makes it instantly expired)
+    // Change from updating expiry to permanently deleting the document
     const couponRef = doc(db, 'delivery_coupons', couponId);
-    await updateDoc(couponRef, {
-      expiresAt: Timestamp.now()
-    });
+    // await updateDoc(couponRef, {
+    //   expiresAt: Timestamp.now()
+    // });
+    await deleteDoc(couponRef); // Use deleteDoc to remove the coupon
 
     return {
       success: true

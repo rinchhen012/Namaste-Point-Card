@@ -81,7 +81,7 @@ function App() {
                 >
                   <Route index element={<AdminDashboard />} />
                   <Route path="coupons" element={<AdminCoupons />} />
-                  <Route path="rewards" element={<AdminCoupons />} />
+                  <Route path="rewards" element={<AdminRewards />} />
                 </Route>
 
                 {/* Fallback route */}
