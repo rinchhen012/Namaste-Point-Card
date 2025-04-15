@@ -73,7 +73,7 @@ const AdminLayout: React.FC = () => {
               className={navLinkClasses}
               onClick={() => setMenuOpen(false)}
             >
-              Delivery Coupons
+              Coupons Management
             </NavLink>
             <NavLink
               to="rewards"
@@ -83,14 +83,28 @@ const AdminLayout: React.FC = () => {
               Rewards Management
             </NavLink>
             <NavLink
-              to="/users"
+              to="store-info"
+              className={navLinkClasses}
+              onClick={() => setMenuOpen(false)}
+            >
+              Store Information
+            </NavLink>
+            <NavLink
+              to="faqs"
+              className={navLinkClasses}
+              onClick={() => setMenuOpen(false)}
+            >
+              FAQs Management
+            </NavLink>
+            <NavLink
+              to="users"
               className={navLinkClasses}
               onClick={() => setMenuOpen(false)}
             >
               Users
             </NavLink>
             <NavLink
-              to="/settings"
+              to="settings"
               className={navLinkClasses}
               onClick={() => setMenuOpen(false)}
             >

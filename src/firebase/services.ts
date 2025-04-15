@@ -1363,3 +1363,85 @@ function isDateExpired(dateObj: { toDate: () => Date }): boolean {
   if (!dateObj || typeof dateObj.toDate !== 'function') return true;
   return dateObj.toDate() < new Date();
 }
+
+// =============================================
+// Store Information & FAQ Functions (for users)
+// =============================================
+
+/**
+ * Get store information from Firestore for display in the user app.
+ * @returns Store information object
+ */
+export const getStoreInfoForUser = async (): Promise<any> => {
+  // Mock data for development
+  if (import.meta.env.DEV && import.meta.env.VITE_USE_MOCK_AUTH === 'true') {
+    return {
+      name: 'Namaste Mock Restaurant',
+      address: {
+        en: 'Mock Address, Tokyo, Japan',
+        ja: 'モック住所、東京、日本'
+      },
+      phone: '03-1234-5678',
+      email: 'mock@example.com',
+      hours: {
+        en: 'Mock: Mon - Sun: 11:00 - 22:00',
+        ja: 'モック: 月曜 - 日曜: 11:00 - 22:00'
+      },
+      website: 'https://mock.example.com',
+      googleMapsUrl: 'https://maps.google.com/mock',
+      imageUrl: 'https://via.placeholder.com/600x400.png?text=Mock+Restaurant+Image'
+    };
+  }
+
+  try {
+    // Use Cloud Function instead of direct Firestore access
+    const getStoreInfo = httpsCallable(functions, 'getStoreInfoForUser');
+    const result = await getStoreInfo();
+
+    // Parse the result data
+    const data = result.data as { success: boolean; storeInfo: any };
+
+    if (data.success) {
+      return data.storeInfo;
+    } else {
+      throw new Error('Failed to fetch store information');
+    }
+  } catch (error) {
+    console.error('Error getting store information for user:', error);
+    // Throw the error so the UI can handle it
+    throw new Error('Failed to fetch store information.');
+  }
+};
+
+/**
+ * Get FAQ items from Firestore for display in the user app.
+ * @returns Array of FAQ items
+ */
+export const getFAQsForUser = async (): Promise<any[]> => {
+   // Mock data for development
+  if (import.meta.env.DEV && import.meta.env.VITE_USE_MOCK_AUTH === 'true') {
+    return [
+      { id: 'faq1', question: { en: 'Mock Q1 (EN)?', ja: 'Mock Q1 (JA)?' }, answer: { en: 'Mock A1 (EN)', ja: 'Mock A1 (JA)' } },
+      { id: 'faq2', question: { en: 'Mock Q2 (EN)?', ja: 'Mock Q2 (JA)?' }, answer: { en: 'Mock A2 (EN)', ja: 'Mock A2 (JA)' } },
+    ];
+  }
+
+  try {
+    // Use Cloud Function instead of direct Firestore access
+    const getFAQs = httpsCallable(functions, 'getFAQsForUser');
+    const result = await getFAQs();
+
+    // Parse the result data
+    const data = result.data as { success: boolean; faqs: any[] };
+
+    if (data.success) {
+      return data.faqs;
+    } else {
+      throw new Error('Failed to fetch FAQ items');
+    }
+  } catch (error) {
+    console.error('Error getting FAQ items for user:', error);
+     // Throw the error so the UI can handle it
+    throw new Error('Failed to fetch FAQ items.');
+  }
+};

@@ -52,6 +52,29 @@ interface CreateDeliveryCouponsData {
   expiryDays: number;
 }
 
+// Interface for store info update
+interface StoreInfoData {
+  storeInfo: {
+    name: string;
+    address: { en: string; ja: string };
+    phone: string;
+    email: string;
+    hours: { en: string; ja: string };
+    website: string;
+    googleMapsUrl: string;
+    imageUrl?: string;
+  };
+  create: boolean;
+}
+
+// Interface for FAQ item management
+interface FAQItemData {
+  id?: string;
+  question: { en: string; ja: string };
+  answer: { en: string; ja: string };
+  action: 'create' | 'update' | 'delete';
+}
+
 /**
  * Validates an online order code and awards points to the user
  *
@@ -759,6 +782,248 @@ export const createDeliveryCoupons = onCall(
         message: 'An error occurred while generating coupon codes',
         error: String(error)
       };
+    }
+  }
+);
+
+// Update store information (admin only)
+export const updateStoreInfo = onCall(
+  async (request: CallableRequest<StoreInfoData>) => {
+    // Check if the request is made by an authenticated user
+    if (!request.auth) {
+      throw new HttpsError(
+        'unauthenticated',
+        'Only authenticated users can update store information'
+      );
+    }
+
+    // Get the user's custom claims to check if they're an admin
+    const callerUid = request.auth.uid;
+    const callerUserRecord = await admin.auth().getUser(callerUid);
+    const callerCustomClaims = callerUserRecord.customClaims;
+
+    // Only allow admins to update store information
+    if (!callerCustomClaims?.admin) {
+      throw new HttpsError(
+        'permission-denied',
+        'Only admins can update store information'
+      );
+    }
+
+    try {
+      const { storeInfo, create } = request.data;
+
+      // Validate required fields
+      if (!storeInfo.name || !storeInfo.address || !storeInfo.phone ||
+          !storeInfo.email || !storeInfo.hours || !storeInfo.website ||
+          !storeInfo.googleMapsUrl) {
+        throw new HttpsError(
+          'invalid-argument',
+          'Missing required store information fields'
+        );
+      }
+
+      // Reference to the store info document
+      const storeInfoRef = db.collection('settings').doc('storeInfo');
+
+      if (create) {
+        // Create new document
+        await storeInfoRef.set(storeInfo);
+      } else {
+        // Update existing document
+        await storeInfoRef.update(storeInfo);
+      }
+
+      return {
+        success: true,
+        message: 'Store information updated successfully'
+      };
+    } catch (error) {
+      console.error('Error updating store information:', error);
+      throw new HttpsError(
+        'internal',
+        'Error updating store information',
+        error
+      );
+    }
+  }
+);
+
+// Get store information for all users (public access)
+export const getStoreInfoForUser = onCall(
+  async (request: CallableRequest<void>) => {
+    try {
+      // Reference to the store info document
+      const storeInfoRef = db.collection('settings').doc('storeInfo');
+      const storeInfoDoc = await storeInfoRef.get();
+
+      if (storeInfoDoc.exists) {
+        return {
+          success: true,
+          storeInfo: storeInfoDoc.data()
+        };
+      } else {
+        // Return default values to prevent UI crashes
+        return {
+          success: true,
+          storeInfo: {
+            name: 'Namaste Restaurant',
+            address: { en: '', ja: '' },
+            phone: '',
+            email: '',
+            hours: { en: '', ja: '' },
+            website: '',
+            googleMapsUrl: '',
+            imageUrl: ''
+          }
+        };
+      }
+    } catch (error) {
+      console.error('Error getting store information for user:', error);
+      throw new HttpsError(
+        'internal',
+        'Failed to fetch store information',
+        error
+      );
+    }
+  }
+);
+
+// Get FAQ items for all users (public access)
+export const getFAQsForUser = onCall(
+  async (request: CallableRequest<void>) => {
+    try {
+      // Reference to the FAQs collection
+      const faqsRef = db.collection('faqs');
+      const querySnapshot = await faqsRef.orderBy('createdAt', 'asc').get();
+
+      const faqs: any[] = [];
+      querySnapshot.forEach((doc) => {
+        faqs.push({
+          id: doc.id,
+          ...doc.data()
+        });
+      });
+
+      return {
+        success: true,
+        faqs: faqs
+      };
+    } catch (error) {
+      console.error('Error getting FAQ items for user:', error);
+      throw new HttpsError(
+        'internal',
+        'Failed to fetch FAQ items',
+        error
+      );
+    }
+  }
+);
+
+// Manage FAQ items (admin only)
+export const manageFAQItem = onCall(
+  async (request: CallableRequest<FAQItemData>) => {
+    // Check if the request is made by an authenticated user
+    if (!request.auth) {
+      throw new HttpsError(
+        'unauthenticated',
+        'Only authenticated users can manage FAQ items'
+      );
+    }
+
+    // Get the user's custom claims to check if they're an admin
+    const callerUid = request.auth.uid;
+    const callerUserRecord = await admin.auth().getUser(callerUid);
+    const callerCustomClaims = callerUserRecord.customClaims;
+
+    // Only allow admins to manage FAQ items
+    if (!callerCustomClaims?.admin) {
+      throw new HttpsError(
+        'permission-denied',
+        'Only admins can manage FAQ items'
+      );
+    }
+
+    try {
+      const { id, question, answer, action } = request.data;
+
+      // Reference to the FAQs collection
+      const faqsRef = db.collection('faqs');
+
+      switch (action) {
+        case 'create':
+          // Validate required fields
+          if (!question || !answer) {
+            throw new HttpsError(
+              'invalid-argument',
+              'Missing required FAQ fields'
+            );
+          }
+
+          // Create new FAQ item
+          const newFAQRef = await faqsRef.add({
+            question,
+            answer,
+            createdAt: admin.firestore.FieldValue.serverTimestamp()
+          });
+
+          return {
+            success: true,
+            message: 'FAQ item created successfully',
+            id: newFAQRef.id
+          };
+
+        case 'update':
+          // Validate required fields
+          if (!id || !question || !answer) {
+            throw new HttpsError(
+              'invalid-argument',
+              'Missing required FAQ fields'
+            );
+          }
+
+          // Update existing FAQ item
+          await faqsRef.doc(id).update({
+            question,
+            answer,
+            updatedAt: admin.firestore.FieldValue.serverTimestamp()
+          });
+
+          return {
+            success: true,
+            message: 'FAQ item updated successfully'
+          };
+
+        case 'delete':
+          // Validate required fields
+          if (!id) {
+            throw new HttpsError(
+              'invalid-argument',
+              'Missing FAQ ID for deletion'
+            );
+          }
+
+          // Delete FAQ item
+          await faqsRef.doc(id).delete();
+
+          return {
+            success: true,
+            message: 'FAQ item deleted successfully'
+          };
+
+        default:
+          throw new HttpsError(
+            'invalid-argument',
+            'Invalid action specified'
+          );
+      }
+    } catch (error) {
+      console.error('Error managing FAQ item:', error);
+      throw new HttpsError(
+        'internal',
+        'Error managing FAQ item',
+        error
+      );
     }
   }
 );

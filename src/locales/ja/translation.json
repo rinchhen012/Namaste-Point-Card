@@ -223,7 +223,8 @@
     "onePointPerDay": "店舗訪問で1日1ポイント獲得できます。",
     "onePointPerOrder": "デリバリー注文1回につき1ポイント獲得できます。",
     "codeExpiryInfo": "デリバリーコードの有効期限は作成から2ヶ月です。",
-    "info": "情報"
+    "info": "情報",
+    "faq": "よくある質問"
   },
   "errors": {
     "offline": "オフラインです",

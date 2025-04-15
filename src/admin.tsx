@@ -10,10 +10,12 @@ import './index.css';
 
 // Admin pages with lazy loading
 const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard'));
+const AdminStoreInfo = lazy(() => import('./pages/admin/AdminStoreInfo'));
 const AdminCoupons = lazy(() => import('./pages/admin/AdminCoupons'));
 const AdminUsers = lazy(() => import('./pages/admin/AdminUsers'));
 const AdminRewards = lazy(() => import('./pages/admin/AdminRewards'));
 const AdminSettings = lazy(() => import('./pages/admin/AdminSettings'));
+const AdminFAQs = lazy(() => import('./pages/admin/AdminFAQs'));
 const AdminLogin = lazy(() => import('./pages/admin/AdminLogin'));
 const UnauthorizedPage = lazy(() => import('./pages/admin/UnauthorizedPage'));
 const AdminLayout = lazy(() => import('./pages/admin/AdminLayout'));
@@ -44,9 +46,11 @@ const AppRouter = () => {
           }
         >
           <Route index element={<AdminDashboard />} />
+          <Route path="store-info" element={<AdminStoreInfo />} />
           <Route path="coupons" element={<AdminCoupons />} />
           <Route path="users" element={<AdminUsers />} />
           <Route path="rewards" element={<AdminRewards />} />
+          <Route path="faqs" element={<AdminFAQs />} />
           <Route path="settings" element={<AdminSettings />} />
           {/* Add other protected admin routes here */}
         </Route>

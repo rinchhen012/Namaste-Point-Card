@@ -10,7 +10,7 @@ import {
   GoogleAuthProvider,
   OAuthProvider
 } from 'firebase/auth';
-import { doc, getDoc, setDoc, Timestamp } from 'firebase/firestore';
+import { doc, getDoc, setDoc, Timestamp, FirestoreError } from 'firebase/firestore';
 import { auth, db } from '../firebase/config';
 import { UserProfile } from '../types';
 
@@ -24,6 +24,7 @@ interface AuthContextType {
   googleSignIn: () => Promise<User>;
   appleSignIn: () => Promise<User>;
   loading: boolean;
+  authError: string | null;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -44,10 +45,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [authError, setAuthError] = useState<string | null>(null);
 
-  // Function to fetch user profile from Firestore
-  const fetchUserProfile = async (user: User) => {
+  // Function to fetch user profile from Firestore with retry
+  const fetchUserProfile = async (user: User, retryCount = 0): Promise<void> => {
+    const MAX_RETRIES = 3;
     try {
+      setAuthError(null);
       const userDocRef = doc(db, 'users', user.uid);
       const userDoc = await getDoc(userDocRef);
 
@@ -55,27 +59,92 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         setUserProfile(userDoc.data() as UserProfile);
       } else {
         console.log('No profile document found for this user');
+        // If no profile exists but we have a valid user, create a default profile
+        if (user.email) {
+          const defaultProfile: UserProfile = {
+            uid: user.uid,
+            email: user.email,
+            displayName: user.displayName || 'User',
+            points: 0,
+            createdAt: Timestamp.now()
+          };
+
+          try {
+            await setDoc(userDocRef, defaultProfile);
+            setUserProfile(defaultProfile);
+          } catch (error) {
+            console.error('Error creating default profile:', error);
+          }
+        }
       }
     } catch (error) {
       console.error('Error fetching user profile:', error);
+      // Handle specific Firestore errors
+      if (error instanceof FirestoreError) {
+        if (['unavailable', 'cancelled', 'unknown', 'deadline-exceeded'].includes(error.code) && retryCount < MAX_RETRIES) {
+          // Retry with exponential backoff for connection-related errors
+          const delay = Math.pow(2, retryCount) * 1000;
+          console.log(`Retrying profile fetch in ${delay}ms (attempt ${retryCount + 1}/${MAX_RETRIES})`);
+          setTimeout(() => {
+            fetchUserProfile(user, retryCount + 1);
+          }, delay);
+          return;
+        }
+
+        // Set a user-friendly error message
+        if (error.code === 'permission-denied') {
+          setAuthError('Access denied. You may not have permission to access your profile.');
+        } else {
+          setAuthError('Error connecting to the server. Please try again later.');
+        }
+      }
+
+      // If we've exhausted retries or it's not a retriable error,
+      // create an in-memory profile from the auth user to allow basic functionality
+      if (user.email) {
+        const fallbackProfile: UserProfile = {
+          uid: user.uid,
+          email: user.email,
+          displayName: user.displayName || 'User',
+          points: 0,
+          createdAt: Timestamp.now()
+        };
+
+        // Use this as a temporary profile until connectivity is restored
+        console.warn('Using fallback profile due to connectivity issues');
+        setUserProfile(fallbackProfile);
+      }
     }
   };
 
   // Monitor authentication state
   useEffect(() => {
+    let unsubscribed = false;
+    setLoading(true);
+
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (unsubscribed) return;
+
       setCurrentUser(user);
 
       if (user) {
         await fetchUserProfile(user);
       } else {
         setUserProfile(null);
+        setAuthError(null);
       }
 
       setLoading(false);
+    }, (error) => {
+      console.error('Auth state change error:', error);
+      setLoading(false);
+      setAuthError('Authentication error. Please try again later.');
     });
 
-    return unsubscribe;
+    return () => {
+      unsubscribed = true;
+      unsubscribe();
+    };
   }, []);
 
   // Login with email and password
@@ -207,7 +276,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     logout,
     googleSignIn,
     appleSignIn,
-    loading
+    loading,
+    authError
   };
 
   return (

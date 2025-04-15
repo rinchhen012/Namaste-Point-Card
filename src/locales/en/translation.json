@@ -228,7 +228,8 @@
     "onePointPerDay": "Earn one point per day with in-store visits.",
     "onePointPerOrder": "Earn one point per delivery order.",
     "codeExpiryInfo": "Delivery codes expire 2 months after creation.",
-    "info": "Info"
+    "info": "Info",
+    "faq": "FAQ"
   },
   "errors": {
     "offline": "You are offline",
