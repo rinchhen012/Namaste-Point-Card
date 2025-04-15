@@ -97,15 +97,15 @@ const InfoPage: React.FC = () => {
 
             <div className="mb-6">
               {/* Display fetched image or a placeholder */}
-              <div className="h-48 bg-gray-200 rounded-lg mb-4 flex items-center justify-center">
+              <div className="aspect-video md:aspect-[16/9] lg:aspect-[16/8] w-full rounded-lg mb-4 flex items-center justify-center overflow-hidden">
                 {storeInfo.imageUrl ? (
                   <img
                     src={storeInfo.imageUrl}
                     alt={storeInfo.name}
-                    className="h-full w-full object-cover rounded-lg"
+                    className="w-full h-full object-contain"
                   />
                 ) : (
-                  <div className="text-gray-400">{t('info.restaurantImage')}</div>
+                  <div className="text-gray-400 bg-gray-100 w-full h-full flex items-center justify-center rounded-lg">{t('info.restaurantImage')}</div>
                 )}
               </div>
 

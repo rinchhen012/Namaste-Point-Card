@@ -7,24 +7,33 @@ import AdminProtectedRoute from './components/AdminProtectedRoute';
 import './locales/i18n';
 import { register as registerServiceWorker } from './serviceWorkerRegistration';
 
-// Import pages with lazy loading for better performance
+// Split core pages from dashboard and features that require authentication
+// This creates better chunks for initial loading experience
+
+// Core pages - main app
 const HomePage = lazy(() => import('./pages/HomePage'));
-const ScanPage = lazy(() => import('./pages/ScanPage'));
-const InStorePage = lazy(() => import('./pages/InStorePage'));
 const LoginPage = lazy(() => import('./pages/LoginPage'));
 const RegisterPage = lazy(() => import('./pages/RegisterPage'));
-const CouponsPage = lazy(() => import('./pages/CouponsPage'));
-const RedemptionPage = lazy(() => import('./pages/RedemptionPage'));
-const RedemptionHistoryPage = lazy(() => import('./pages/RedemptionHistoryPage'));
-const ProfilePage = lazy(() => import('./pages/ProfilePage'));
 const InfoPage = lazy(() => import('./pages/InfoPage'));
 
-// Admin pages
-const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard'));
-const AdminCoupons = lazy(() => import('./pages/admin/AdminCoupons'));
-const AdminLayout = lazy(() => import('./pages/admin/AdminLayout'));
-const AdminLogin = lazy(() => import('./pages/admin/AdminLogin'));
-const AdminRewards = lazy(() => import('./pages/admin/AdminRewards'));
+// Features behind authentication
+const ScanPage = lazy(() => import(/* webpackChunkName: "auth-features" */ './pages/ScanPage'));
+const InStorePage = lazy(() => import(/* webpackChunkName: "auth-features" */ './pages/InStorePage'));
+const CouponsPage = lazy(() => import(/* webpackChunkName: "auth-features" */ './pages/CouponsPage'));
+const RedemptionPage = lazy(() => import(/* webpackChunkName: "auth-features" */ './pages/RedemptionPage'));
+const RedemptionHistoryPage = lazy(() => import(/* webpackChunkName: "auth-features" */ './pages/RedemptionHistoryPage'));
+const ProfilePage = lazy(() => import(/* webpackChunkName: "auth-features" */ './pages/ProfilePage'));
+
+// Admin pages bundled separately for smaller main bundle
+const AdminDashboard = lazy(() => import(/* webpackChunkName: "admin-core" */ './pages/admin/AdminDashboard'));
+const AdminCoupons = lazy(() => import(/* webpackChunkName: "admin-core" */ './pages/admin/AdminCoupons'));
+const AdminLayout = lazy(() => import(/* webpackChunkName: "admin-core" */ './pages/admin/AdminLayout'));
+const AdminLogin = lazy(() => import(/* webpackChunkName: "admin-core" */ './pages/admin/AdminLogin'));
+const AdminRewards = lazy(() => import(/* webpackChunkName: "admin-core" */ './pages/admin/AdminRewards'));
+const AdminUsers = lazy(() => import(/* webpackChunkName: "admin-core" */ './pages/admin/AdminUsers'));
+const AdminStoreInfo = lazy(() => import(/* webpackChunkName: "admin-features" */ './pages/admin/AdminStoreInfo'));
+const AdminFAQs = lazy(() => import(/* webpackChunkName: "admin-features" */ './pages/admin/AdminFAQs'));
+const AdminSettings = lazy(() => import(/* webpackChunkName: "admin-features" */ './pages/admin/AdminSettings'));
 
 // Loading component for suspense fallback
 const Loading = () => (
@@ -52,42 +61,93 @@ function App() {
       <AuthProvider>
         <LanguageProvider>
           <AdminAuthProvider>
-            <Suspense fallback={<Loading />}>
-              <Routes>
-                {/* Main app routes */}
-                <Route path="/" element={<HomePage />} />
-                <Route path="/scan" element={<ScanPage />} />
-                <Route path="/in-store" element={<InStorePage />} />
-                <Route path="/login" element={<LoginPage />} />
-                <Route path="/register" element={<RegisterPage />} />
-                <Route path="/coupons" element={<CouponsPage />} />
-                <Route path="/rewards" element={<Navigate to="/coupons" replace />} />
-                <Route path="/redemption/:id" element={<RedemptionPage />} />
-                <Route path="/redemption-history" element={<RedemptionHistoryPage />} />
-                <Route path="/profile" element={<ProfilePage />} />
-                <Route path="/info" element={<InfoPage />} />
-                {/* Redirect old code-entry URLs to scan page which now has integrated manual entry */}
-                <Route path="/code-entry" element={<Navigate to="/scan" replace />} />
+            {/* Core routes accessible without auth */}
+            <Routes>
+              <Route path="/" element={
+                <Suspense fallback={<Loading />}>
+                  <HomePage />
+                </Suspense>
+              } />
+              <Route path="/login" element={
+                <Suspense fallback={<Loading />}>
+                  <LoginPage />
+                </Suspense>
+              } />
+              <Route path="/register" element={
+                <Suspense fallback={<Loading />}>
+                  <RegisterPage />
+                </Suspense>
+              } />
+              <Route path="/info" element={
+                <Suspense fallback={<Loading />}>
+                  <InfoPage />
+                </Suspense>
+              } />
 
-                {/* Admin routes */}
-                <Route path="/admin/login" element={<AdminLogin />} />
-                <Route
-                  path="/admin"
-                  element={
-                    <AdminProtectedRoute>
+              {/* Feature routes that need authentication */}
+              <Route path="/scan" element={
+                <Suspense fallback={<Loading />}>
+                  <ScanPage />
+                </Suspense>
+              } />
+              <Route path="/in-store" element={
+                <Suspense fallback={<Loading />}>
+                  <InStorePage />
+                </Suspense>
+              } />
+              <Route path="/coupons" element={
+                <Suspense fallback={<Loading />}>
+                  <CouponsPage />
+                </Suspense>
+              } />
+              <Route path="/rewards" element={<Navigate to="/coupons" replace />} />
+              <Route path="/redemption/:id" element={
+                <Suspense fallback={<Loading />}>
+                  <RedemptionPage />
+                </Suspense>
+              } />
+              <Route path="/redemption-history" element={
+                <Suspense fallback={<Loading />}>
+                  <RedemptionHistoryPage />
+                </Suspense>
+              } />
+              <Route path="/profile" element={
+                <Suspense fallback={<Loading />}>
+                  <ProfilePage />
+                </Suspense>
+              } />
+
+              {/* Redirect old code-entry URLs to scan page which now has integrated manual entry */}
+              <Route path="/code-entry" element={<Navigate to="/scan" replace />} />
+
+              {/* Admin routes with separate Suspense boundary */}
+              <Route path="/admin/login" element={
+                <Suspense fallback={<Loading />}>
+                  <AdminLogin />
+                </Suspense>
+              } />
+              <Route
+                path="/admin"
+                element={
+                  <AdminProtectedRoute>
+                    <Suspense fallback={<Loading />}>
                       <AdminLayout />
-                    </AdminProtectedRoute>
-                  }
-                >
-                  <Route index element={<AdminDashboard />} />
-                  <Route path="coupons" element={<AdminCoupons />} />
-                  <Route path="rewards" element={<AdminRewards />} />
-                </Route>
+                    </Suspense>
+                  </AdminProtectedRoute>
+                }
+              >
+                <Route index element={<AdminDashboard />} />
+                <Route path="coupons" element={<AdminCoupons />} />
+                <Route path="rewards" element={<AdminRewards />} />
+                <Route path="users" element={<AdminUsers />} />
+                <Route path="store-info" element={<AdminStoreInfo />} />
+                <Route path="faqs" element={<AdminFAQs />} />
+                <Route path="settings" element={<AdminSettings />} />
+              </Route>
 
-                {/* Fallback route */}
-                <Route path="*" element={<Navigate to="/" replace />} />
-              </Routes>
-            </Suspense>
+              {/* Fallback route */}
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
           </AdminAuthProvider>
         </LanguageProvider>
       </AuthProvider>
