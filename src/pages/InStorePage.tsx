@@ -5,7 +5,7 @@ import { Timestamp } from 'firebase/firestore';
 import Layout from '../components/Layout/Layout';
 import { useAuth } from '../contexts/AuthContext';
 import useGeolocation from '../hooks/useGeolocation';
-import { validateQRCheckIn } from '../firebase/services';
+import { validateQRCode } from '../firebase/services';
 import QRScanner from '../components/Scanner/QRScanner';
 
 // Restaurant coordinates are now determined by the QR code scanned
@@ -52,9 +52,8 @@ const InStorePage: React.FC = () => {
       // Get current position
       const position = await getPosition();
 
-      // Call the validateQRCheckIn function with QR code and location
-      const result = await validateQRCheckIn(
-        currentUser.uid,
+      // Call the validateQRCode function with QR code and location
+      const result = await validateQRCode(
         qrCode,
         position.latitude,
         position.longitude

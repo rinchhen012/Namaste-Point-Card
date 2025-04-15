@@ -23,6 +23,7 @@ import { UserProfile, Reward, Redemption, OnlineOrderCode, PointsTransaction } f
 import crypto from 'crypto';
 import { getFunctions } from 'firebase/functions';
 import { app } from './config';
+import { getAuth } from 'firebase/auth';
 
 // Dashboard statistics
 export const getStatsData = async () => {
@@ -38,6 +39,13 @@ export const getStatsData = async () => {
   }
 
   try {
+    // Check admin permissions first
+    const isAdmin = await debugAdminStatus();
+
+    if (!isAdmin) {
+      throw new Error("Missing or insufficient permissions. User does not have admin role.");
+    }
+
     // Count total users
     const usersRef = collection(db, 'users');
     const usersSnapshot = await getDocs(usersRef);
@@ -99,7 +107,14 @@ export const getStatsData = async () => {
     };
   } catch (error) {
     console.error('Error getting stats data:', error);
-    throw error;
+
+    // If it's a permissions error, we already have a more specific error message
+    if (error.message && error.message.includes("Missing or insufficient permissions")) {
+      throw error;
+    }
+
+    // For other errors, throw a generic error
+    throw new Error(`Failed to fetch stats data: ${error.message || 'Unknown error'}`);
   }
 };
 
@@ -131,6 +146,13 @@ export const getRecentOrders = async (limitCount = 10) => {
   }
 
   try {
+    // Verify admin status
+    const isAdmin = await debugAdminStatus();
+
+    if (!isAdmin) {
+      throw new Error("Missing or insufficient permissions. User does not have admin role.");
+    }
+
     const ordersRef = collection(db, 'points_history');
     const ordersQuery = query(
       ordersRef,
@@ -162,7 +184,14 @@ export const getRecentOrders = async (limitCount = 10) => {
     return orders;
   } catch (error) {
     console.error('Error getting recent orders:', error);
-    throw error;
+
+    // If it's a permissions error, we already have a more specific error message
+    if (error.message && error.message.includes("Missing or insufficient permissions")) {
+      throw error;
+    }
+
+    // For other errors, throw a generic error
+    throw new Error(`Failed to fetch recent orders: ${error.message || 'Unknown error'}`);
   }
 };
 
@@ -490,8 +519,8 @@ export async function getAllRewardsList(): Promise<Reward[]> {
           nameJa: 'ナンが無料',
           description: 'Get a free naan with your next order',
           descriptionJa: '次回の注文でナンが無料',
-          points: 10,
-          active: true,
+          pointsCost: 10,
+          isActive: true,
           imageUrl: 'https://example.com/naan.jpg'
         },
         {
@@ -500,8 +529,8 @@ export async function getAllRewardsList(): Promise<Reward[]> {
           nameJa: '10%割引',
           description: 'Get 10% off your next order',
           descriptionJa: '次回の注文で10%割引',
-          points: 20,
-          active: true,
+          pointsCost: 20,
+          isActive: true,
           imageUrl: 'https://example.com/discount.jpg'
         }
       ];
@@ -520,8 +549,8 @@ export async function getAllRewardsList(): Promise<Reward[]> {
         nameJa: data.nameJa || '',
         description: data.description || '',
         descriptionJa: data.descriptionJa || '',
-        points: data.points || 0,
-        active: data.active || false,
+        pointsCost: data.pointsCost || data.points || 0,
+        isActive: data.isActive || data.active || false,
         imageUrl: data.imageUrl || ''
       });
     });
@@ -766,5 +795,44 @@ export async function addAdminRole(email: string): Promise<{
       success: false,
       error: error.message || 'An error occurred while adding admin role'
     };
+  }
+}
+
+/**
+ * Debug function to check admin status of current user
+ */
+export async function debugAdminStatus() {
+  try {
+    // Get current user
+    const auth = getAuth();
+    const user = auth.currentUser;
+
+    if (!user) {
+      return false;
+    }
+
+    // Check user document in Firestore
+    const userDocRef = doc(db, 'users', user.uid);
+    const userDoc = await getDoc(userDocRef);
+
+    if (!userDoc.exists()) {
+      return false;
+    }
+
+    const userData = userDoc.data();
+
+    // Check custom claims (requires a token refresh)
+    try {
+      await user.getIdToken(true); // Force refresh
+      const idTokenResult = await user.getIdTokenResult();
+
+      return userData.role === 'admin';
+    } catch (err) {
+      console.error("Error refreshing token", err);
+      return userData.role === 'admin';
+    }
+  } catch (error) {
+    console.error("Error checking admin status", error);
+    return false;
   }
 }

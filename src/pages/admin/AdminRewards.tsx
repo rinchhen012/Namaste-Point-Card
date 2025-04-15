@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
+
+
 import { getAllRewardsList, createNewReward, updateExistingReward, deleteExistingReward, uploadRewardImage } from '../../firebase/adminServices';
 import { Reward } from '../../types';
 import ConfirmationModal from '../../components/Admin/ConfirmationModal';
@@ -8,9 +10,9 @@ interface RewardFormData {
   nameJa: string;
   description: string;
   descriptionJa: string;
-  points: number;
+  pointsCost: number;
   imageFile: File | null;
-  active: boolean;
+  isActive: boolean;
   imageUrl?: string;
 }
 
@@ -30,9 +32,9 @@ const AdminRewards: React.FC = () => {
     nameJa: '',
     description: '',
     descriptionJa: '',
-    points: 10,
+    pointsCost: 10,
     imageFile: null,
-    active: true
+    isActive: true
   });
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -57,13 +59,13 @@ const AdminRewards: React.FC = () => {
 
   const handleToggleActive = async (rewardId: string, isCurrentlyActive: boolean) => {
     try {
-      await updateExistingReward(rewardId, { active: !isCurrentlyActive });
+      await updateExistingReward(rewardId, { isActive: !isCurrentlyActive });
 
       // Update local state
       setRewards(prev =>
         prev.map(reward =>
           reward.id === rewardId
-            ? { ...reward, active: !isCurrentlyActive }
+            ? { ...reward, isActive: !isCurrentlyActive }
             : reward
         )
       );
@@ -81,9 +83,9 @@ const AdminRewards: React.FC = () => {
       nameJa: '',
       description: '',
       descriptionJa: '',
-      points: 10,
+      pointsCost: 10,
       imageFile: null,
-      active: true
+      isActive: true
     });
   };
 
@@ -100,9 +102,9 @@ const AdminRewards: React.FC = () => {
       nameJa: reward.nameJa,
       description: reward.description,
       descriptionJa: reward.descriptionJa,
-      points: reward.points,
+      pointsCost: reward.pointsCost,
       imageFile: null,
-      active: reward.active,
+      isActive: reward.isActive,
       imageUrl: reward.imageUrl
     });
   };
@@ -200,8 +202,7 @@ const AdminRewards: React.FC = () => {
       // Create new reward
       const newReward = await createNewReward({
         ...rewardData,
-        imageUrl: newImageUrl,
-        createdAt: new Date() // Ensure createdAt is set
+        imageUrl: newImageUrl
       });
 
       // Add new reward to the list
@@ -293,7 +294,7 @@ const AdminRewards: React.FC = () => {
             <div
               key={reward.id}
               className={`bg-white rounded-lg shadow-md overflow-hidden flex flex-col border-2 ${
-                reward.active
+                reward.isActive
                   ? 'border-green-500 bg-green-50'
                   : 'border-gray-200'
               }`}
@@ -316,14 +317,14 @@ const AdminRewards: React.FC = () => {
                 <p className="text-sm text-gray-500 line-clamp-2">{reward.descriptionJa}</p>
               </div>
               <div className="px-4 py-3 bg-gray-50 border-t border-gray-200 flex justify-between items-center mt-auto">
-                <span className="font-bold text-orange-600">{reward.points} pts</span>
+                <span className="font-bold text-orange-600">{reward.pointsCost} pts</span>
                 <div className="space-x-2 flex items-center">
                   <button
-                    onClick={() => handleToggleActive(reward.id, reward.active)}
+                    onClick={() => handleToggleActive(reward.id, reward.isActive)}
                     className="px-3 py-1 text-xs rounded hover:bg-blue-100 text-blue-700"
-                    title={reward.active ? 'Deactivate Reward' : 'Activate Reward'}
+                    title={reward.isActive ? 'Deactivate Reward' : 'Activate Reward'}
                   >
-                    {reward.active ? 'Deactivate' : 'Activate'}
+                    {reward.isActive ? 'Deactivate' : 'Activate'}
                   </button>
                   <button
                     onClick={() => openEditModal(reward)}
@@ -431,14 +432,14 @@ const AdminRewards: React.FC = () => {
               </div>
 
               <div className="mb-4">
-                <label htmlFor="points" className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="pointsCost" className="block text-sm font-medium text-gray-700 mb-1">
                   Points Required
                 </label>
                 <input
                   type="number"
-                  id="points"
-                  name="points"
-                  value={formData.points}
+                  id="pointsCost"
+                  name="pointsCost"
+                  value={formData.pointsCost}
                   onChange={handleInputChange}
                   min="1"
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-orange-500 focus:border-orange-500"
@@ -467,13 +468,13 @@ const AdminRewards: React.FC = () => {
               <div className="mb-4 flex items-center">
                 <input
                   type="checkbox"
-                  id="active"
-                  name="active"
-                  checked={formData.active}
+                  id="isActive"
+                  name="isActive"
+                  checked={formData.isActive}
                   onChange={handleCheckboxChange}
                   className="h-4 w-4 text-orange-600 focus:ring-orange-500 border-gray-300 rounded"
                 />
-                <label htmlFor="active" className="ml-2 block text-sm text-gray-700">
+                <label htmlFor="isActive" className="ml-2 block text-sm text-gray-700">
                   Active (immediately available to users)
                 </label>
               </div>
@@ -589,14 +590,14 @@ const AdminRewards: React.FC = () => {
               </div>
 
               <div className="mb-4">
-                <label htmlFor="edit-points" className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="edit-pointsCost" className="block text-sm font-medium text-gray-700 mb-1">
                   Points Required
                 </label>
                 <input
                   type="number"
-                  id="edit-points"
-                  name="points"
-                  value={formData.points}
+                  id="edit-pointsCost"
+                  name="pointsCost"
+                  value={formData.pointsCost}
                   onChange={handleInputChange}
                   min="1"
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-orange-500 focus:border-orange-500"
@@ -638,13 +639,13 @@ const AdminRewards: React.FC = () => {
               <div className="mb-4 flex items-center">
                 <input
                   type="checkbox"
-                  id="edit-active"
-                  name="active"
-                  checked={formData.active}
+                  id="edit-isActive"
+                  name="isActive"
+                  checked={formData.isActive}
                   onChange={handleCheckboxChange}
                   className="h-4 w-4 text-orange-600 focus:ring-orange-500 border-gray-300 rounded"
                 />
-                <label htmlFor="edit-active" className="ml-2 block text-sm text-gray-700">
+                <label htmlFor="edit-isActive" className="ml-2 block text-sm text-gray-700">
                   Active (immediately available to users)
                 </label>
               </div>

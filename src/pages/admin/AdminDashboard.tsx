@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { getRecentOrders, getActiveUsersCount, getStatsData } from '../../firebase/adminServices';
+import { getRecentOrders, getActiveUsersCount, getStatsData, debugAdminStatus } from '../../firebase/adminServices';
 
 interface DashboardStats {
   totalUsers: number;
@@ -21,15 +21,18 @@ const AdminDashboard: React.FC = () => {
   });
   const [recentOrders, setRecentOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchDashboardData = async () => {
+    const fetchData = async () => {
       try {
         setLoading(true);
+        setError(null);
 
-        // In development mode, use mock data
+        // First run the debug function to check admin status
+        await debugAdminStatus();
+
         if (import.meta.env.DEV && import.meta.env.VITE_USE_MOCK_AUTH === 'true') {
-          // Mock data for development
           setStats({
             totalUsers: 124,
             activeUsers: 45,
@@ -45,20 +48,13 @@ const AdminDashboard: React.FC = () => {
               userName: 'Tanaka Yuki',
               type: 'delivery_order',
               code: 'DEL-12345',
-              timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000)
+              timestamp: new Date(Date.now() - 1 * 60 * 60 * 1000)
             },
             {
               id: 'order2',
-              userName: 'Suzuki Keita',
+              userName: 'Smith John',
               type: 'in_store_visit',
-              timestamp: new Date(Date.now() - 5 * 60 * 60 * 1000)
-            },
-            {
-              id: 'order3',
-              userName: 'John Smith',
-              type: 'delivery_order',
-              code: 'DEL-54321',
-              timestamp: new Date(Date.now() - 8 * 60 * 60 * 1000)
+              timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000)
             }
           ]);
 
@@ -66,21 +62,22 @@ const AdminDashboard: React.FC = () => {
           return;
         }
 
-        // For production, fetch real data
+        // Fetch dashboard stats
         const statsData = await getStatsData();
-        setStats(statsData as DashboardStats);
+        setStats(statsData);
 
-        const orders = await getRecentOrders();
-        setRecentOrders(orders);
-
-        setLoading(false);
-      } catch (error) {
-        console.error('Error fetching dashboard data:', error);
+        // Fetch recent orders
+        const ordersData = await getRecentOrders(5);
+        setRecentOrders(ordersData);
+      } catch (err) {
+        console.error('Error fetching dashboard data:', err);
+        setError('Failed to load dashboard data. Please try again later.');
+      } finally {
         setLoading(false);
       }
     };
 
-    fetchDashboardData();
+    fetchData();
   }, []);
 
   // Format date for display

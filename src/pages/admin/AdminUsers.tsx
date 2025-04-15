@@ -17,6 +17,10 @@ const AdminUsers: React.FC = () => {
   const [adjustmentMode, setAdjustmentMode] = useState<'add' | 'subtract'>('add');
   const [pointsNote, setPointsNote] = useState<string>('');
   const [adjustingPoints, setAdjustingPoints] = useState(false);
+  // Role change confirmation state
+  const [roleModalOpen, setRoleModalOpen] = useState(false);
+  const [roleChangeUser, setRoleChangeUser] = useState<{userId: string, currentRole: string, userName: string} | null>(null);
+  const [changingRole, setChangingRole] = useState(false);
 
   useEffect(() => {
     loadUsers();
@@ -53,8 +57,22 @@ const AdminUsers: React.FC = () => {
     }
   };
 
+  const openRoleChangeModal = (userId: string, currentRole: string, userName: string) => {
+    setRoleChangeUser({ userId, currentRole, userName });
+    setRoleModalOpen(true);
+  };
+
+  const closeRoleChangeModal = () => {
+    setRoleModalOpen(false);
+    setRoleChangeUser(null);
+    setChangingRole(false);
+  };
+
   const handleToggleAdmin = async (userId: string, currentRole: string) => {
+    if (!roleChangeUser) return;
+
     try {
+      setChangingRole(true);
       const isCurrentlyAdmin = currentRole === 'admin';
       await setUserAsAdmin(userId, !isCurrentlyAdmin);
 
@@ -66,9 +84,11 @@ const AdminUsers: React.FC = () => {
             : user
         )
       );
+      closeRoleChangeModal();
     } catch (err) {
       console.error('Error updating user role:', err);
       setError('Failed to update user role. Please try again.');
+      setChangingRole(false);
     }
   };
 
@@ -201,7 +221,7 @@ const AdminUsers: React.FC = () => {
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                   <button
-                    onClick={() => handleToggleAdmin(user.uid, user.role || 'user')}
+                    onClick={() => openRoleChangeModal(user.uid, user.role || 'user', user.displayName || 'Unknown User')}
                     className={`text-indigo-600 hover:text-indigo-900 mr-3 ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
                     disabled={loading}
                   >
@@ -243,6 +263,67 @@ const AdminUsers: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* Role Change Confirmation Modal */}
+      {roleModalOpen && roleChangeUser && (
+        <div className="fixed inset-0 flex items-center justify-center z-50">
+          <div className="absolute inset-0 bg-black opacity-50" onClick={closeRoleChangeModal}></div>
+          <div className="bg-white rounded-lg p-6 z-10 max-w-md w-full">
+            <h2 className="text-xl font-semibold mb-4">Confirm Role Change</h2>
+
+            <p className="mb-6">
+              Are you sure you want to {roleChangeUser.currentRole === 'admin' ? 'remove admin privileges from' : 'make'}{' '}
+              <span className="font-semibold">{roleChangeUser.userName}</span>{' '}
+              {roleChangeUser.currentRole === 'admin' ? 'and change them to a regular user?' : 'an admin?'}
+            </p>
+
+            {roleChangeUser.currentRole !== 'admin' && (
+              <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-6">
+                <div className="flex">
+                  <div className="flex-shrink-0">
+                    <svg className="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                  <div className="ml-3">
+                    <p className="text-sm text-yellow-700">
+                      <strong>Warning:</strong> Admin users have full access to manage all users, points, and rewards. Only grant admin privileges to trusted staff.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <div className="flex justify-end space-x-2">
+              <button
+                onClick={closeRoleChangeModal}
+                className="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded"
+                disabled={changingRole}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => handleToggleAdmin(roleChangeUser.userId, roleChangeUser.currentRole)}
+                disabled={changingRole}
+                className={`${
+                  roleChangeUser.currentRole === 'admin'
+                    ? 'bg-red-500 hover:bg-red-700'
+                    : 'bg-indigo-600 hover:bg-indigo-700'
+                } text-white font-bold py-2 px-4 rounded ${
+                  changingRole ? 'opacity-50 cursor-not-allowed' : ''
+                }`}
+              >
+                {changingRole
+                  ? 'Processing...'
+                  : roleChangeUser.currentRole === 'admin'
+                    ? 'Yes, Remove Admin'
+                    : 'Yes, Make Admin'
+                }
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Points Adjustment Modal */}
       {pointsModalOpen && selectedUser && (

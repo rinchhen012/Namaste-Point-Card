@@ -173,18 +173,6 @@ const HomePage: React.FC = () => {
             <li>{t('info.earnInStore')}</li>
             <li>{t('info.onePointPerDay')}</li>
           </ul>
-
-          <div className="mt-4 pt-4 border-t border-gray-100">
-            <button
-              onClick={() => navigate('/coupons')}
-              className="flex items-center justify-between w-full p-2 bg-gray-50 rounded"
-            >
-              <span className="font-medium">{t('home.viewRewards')}</span>
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-primary" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
-              </svg>
-            </button>
-          </div>
         </div>
       </div>
     </Layout>

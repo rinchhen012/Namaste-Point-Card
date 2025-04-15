@@ -214,7 +214,17 @@ export const validateQRCheckIn = onCall(
 
       // Get the user document to check their last QR check-in time
       const userRef = db.collection('users').doc(userId);
-      const userDoc = await userRef.get();
+      let userDoc;
+      try {
+        userDoc = await userRef.get();
+      } catch (userError) {
+        console.error('Error fetching user document:', userError);
+        return {
+          success: false,
+          message: 'Failed to access user data. Please try again later.',
+          error: 'user_access_error'
+        };
+      }
 
       if (!userDoc.exists) {
         return { success: false, message: 'User not found' };
@@ -238,47 +248,99 @@ export const validateQRCheckIn = onCall(
       }
 
       // Award points for check-in (using a transaction for atomicity)
-      await db.runTransaction(async (transaction) => {
-        // Get latest user document within the transaction
-        const latestUserDoc = await transaction.get(userRef);
-        if (!latestUserDoc.exists) {
-          throw new Error('User not found');
+      try {
+        await db.runTransaction(async (transaction) => {
+          // Get latest user document within the transaction
+          const latestUserDoc = await transaction.get(userRef);
+          if (!latestUserDoc.exists) {
+            throw new Error('User not found');
+          }
+
+          const latestUserData = latestUserDoc.data();
+          const currentPoints = latestUserData?.points || 0;
+          const pointsToAdd = 1; // 1 point for check-in
+
+          // Update user points and last QR check-in
+          transaction.update(userRef, {
+            points: currentPoints + pointsToAdd,
+            lastQRCheckIn: {
+              timestamp: admin.firestore.Timestamp.now(),
+              qrCode: qrCode
+            }
+          });
+
+          // Record points transaction
+          transaction.set(db.collection('points_transactions').doc(), {
+            userId: userId,
+            points: pointsToAdd,
+            type: 'in-store',
+            createdAt: admin.firestore.Timestamp.now(),
+            location: new admin.firestore.GeoPoint(latitude, longitude),
+            note: 'QR code check-in',
+            metadata: {
+              qrCode: qrCode
+            }
+          });
+        });
+      } catch (transactionError: any) {
+        console.error('Transaction error during check-in:', transactionError);
+
+        // Handle permission errors
+        if (transactionError.code === 'permission-denied') {
+          return {
+            success: false,
+            message: 'You do not have permission to check in. Please contact support.',
+            error: 'permission_denied'
+          };
         }
 
-        const latestUserData = latestUserDoc.data();
-        const currentPoints = latestUserData?.points || 0;
-        const pointsToAdd = 1; // 1 point for check-in
+        // Handle missing index errors
+        if (transactionError.message && transactionError.message.includes('index')) {
+          console.error('Missing index error. Please check Firestore indexes.');
+          return {
+            success: false,
+            message: 'Service configuration error. Please try again later.',
+            error: 'missing_index'
+          };
+        }
 
-        // Update user points and last QR check-in
-        transaction.update(userRef, {
-          points: currentPoints + pointsToAdd,
-          lastQRCheckIn: {
-            timestamp: admin.firestore.Timestamp.now(),
-            qrCode: qrCode
-          }
-        });
-
-        // Record points transaction
-        transaction.set(db.collection('points_transactions').doc(), {
-          userId: userId,
-          points: pointsToAdd,
-          type: 'in-store',
-          createdAt: admin.firestore.Timestamp.now(),
-          location: new admin.firestore.GeoPoint(latitude, longitude),
-          note: 'QR code check-in',
-          metadata: {
-            qrCode: qrCode
-          }
-        });
-      });
+        return {
+          success: false,
+          message: 'Failed to process check-in. Please try again later.',
+          error: 'transaction_error'
+        };
+      }
 
       return {
         success: true,
         message: 'Check-in successful! 1 point added to your account.'
       };
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error validating QR check-in:', error);
-      return { success: false, message: 'An error occurred during check-in' };
+
+      // Provide more specific error messages based on error type
+      if (error.code === 'permission-denied') {
+        return {
+          success: false,
+          message: 'You do not have permission to perform this action.',
+          error: 'permission_denied'
+        };
+      }
+
+      if (error.message && error.message.includes('index')) {
+        console.error('Missing index error. Please check Firestore indexes.');
+        return {
+          success: false,
+          message: 'Service configuration error. Please try again later.',
+          error: 'missing_index'
+        };
+      }
+
+      return {
+        success: false,
+        message: 'An error occurred during check-in. Please try again later.',
+        error: 'unknown_error'
+      };
     }
   }
 );

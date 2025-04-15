@@ -27,6 +27,7 @@ const ProfilePage: React.FC = () => {
   const nameInputRef = useRef<HTMLInputElement>(null);
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
   const [nextExpiration, setNextExpiration] = useState<Date | null>(null);
+  const [isLoadingHistory, setIsLoadingHistory] = useState(false);
 
   useEffect(() => {
     if (!currentUser) {
@@ -38,25 +39,29 @@ const ProfilePage: React.FC = () => {
       setNewName(userProfile.displayName);
     }
 
-    const fetchPointsData = async () => {
-      setLoading(true);
+    const fetchData = async () => {
+      setIsLoadingHistory(true);
+      setError(null);
+
       try {
-        const [history, expirationInfo] = await Promise.all([
-          getUserPointsHistory(currentUser.uid),
-          getNextPointsExpirationInfo(currentUser.uid)
-        ]);
+        // Fetch points history
+        const history = await getUserPointsHistory(currentUser.uid);
         setPointsHistory(history);
+
+        // Fetch next expiration info
+        const expirationInfo = await getNextPointsExpirationInfo(currentUser.uid);
         setNextExpiration(expirationInfo ? expirationInfo.expiresAt : null);
-      } catch (err) {
-        console.error('Error fetching points data:', err);
-        setError(t('common.error'));
-      } finally {
-        setLoading(false);
+
+        setIsLoadingHistory(false);
+      } catch (err: any) {
+        console.error('Error fetching profile data:', err);
+        setError('Failed to load profile data');
+        setIsLoadingHistory(false);
       }
     };
 
-    fetchPointsData();
-  }, [currentUser, navigate, t, userProfile]);
+    fetchData();
+  }, [currentUser, navigate, userProfile]);
 
   useEffect(() => {
     if (isEditingName && nameInputRef.current) {

@@ -1,134 +1,143 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAdminAuth } from '../../contexts/AdminAuthContext';
+import { debugAdminStatus } from '../../firebase/adminServices';
+import { doc, getFirestore, setDoc } from 'firebase/firestore';
+import { getAuth } from 'firebase/auth';
 
 const AdminLogin: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const { adminLogin, isAdminAuthenticated, adminAuthLoading } = useAdminAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const from = location.state?.from?.pathname || '/admin';
 
-  // Get the path to redirect to after login
-  const from = location.state?.from?.pathname || '/';
-
-  // If admin is already authenticated, redirect to the admin dashboard
   useEffect(() => {
     if (isAdminAuthenticated && !adminAuthLoading) {
       navigate(from, { replace: true });
     }
   }, [isAdminAuthenticated, adminAuthLoading, navigate, from]);
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
-
-    if (!email.trim() || !password.trim()) {
-      setError('Email and password are required');
-      return;
-    }
+    setLoading(true);
+    setError(null);
 
     try {
-      setIsLoading(true);
       const success = await adminLogin(email, password);
-
       if (!success) {
-        setError('Invalid credentials or not an admin user');
+        setError('Invalid login credentials or insufficient permissions. Please ensure your account has admin privileges.');
       }
     } catch (err) {
-      setError('Login failed. Please try again.');
-      console.error(err);
+      console.error('Login error:', err);
+      setError('An error occurred during login. Please try again.');
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   };
 
-  if (adminAuthLoading && !isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-100">
-        <div className="w-full max-w-md p-8">
-          <div className="animate-spin rounded-full h-12 w-12 border-4 border-orange-600 border-t-transparent mx-auto"></div>
-        </div>
-      </div>
-    );
-  }
+  const handleDebugAdminStatus = async () => {
+    await debugAdminStatus();
+  };
+
+  const handleFixAdminRole = async () => {
+    try {
+      setLoading(true);
+      const auth = getAuth();
+      const user = auth.currentUser;
+
+      if (!user) {
+        setError('No user is logged in. Please login first.');
+        return;
+      }
+
+      // Update user document with admin role
+      const db = getFirestore();
+      await setDoc(doc(db, 'users', user.uid), {
+        role: 'admin',
+        email: user.email
+      }, { merge: true });
+
+      alert('Admin role has been set. Please log out and log in again.');
+    } catch (err) {
+      console.error('Error setting admin role:', err);
+      setError('Failed to set admin role: ' + (err.message || 'Unknown error'));
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-100">
-      <div className="w-full max-w-md p-8 space-y-8 bg-white rounded-lg shadow-md">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-gray-900">Admin Login</h1>
-          <p className="mt-2 text-sm text-gray-600">
-            Enter your admin credentials
-          </p>
-        </div>
+    <div className="min-h-screen flex items-center justify-center bg-gray-100">
+      <div className="bg-white p-8 rounded-lg shadow-md w-full max-w-md">
+        <h2 className="text-2xl font-bold mb-6 text-center text-gray-800">Admin Login</h2>
 
-        <form className="mt-8 space-y-6" onSubmit={handleLogin}>
-          {error && (
-            <div className="p-3 text-sm text-red-700 bg-red-100 rounded-md">
-              {error}
-            </div>
-          )}
+        {error && (
+          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+            {error}
+          </div>
+        )}
 
-          <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+        <form onSubmit={handleSubmit}>
+          <div className="mb-4">
+            <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="email">
               Email
             </label>
             <input
               id="email"
-              name="email"
               type="email"
-              autoComplete="email"
-              required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="block w-full px-3 py-2 mt-1 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-orange-500 focus:border-orange-500"
+              className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+              required
             />
           </div>
 
-          <div>
-            <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+          <div className="mb-6">
+            <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="password">
               Password
             </label>
             <input
               id="password"
-              name="password"
               type="password"
-              autoComplete="current-password"
-              required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="block w-full px-3 py-2 mt-1 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-orange-500 focus:border-orange-500"
+              className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+              required
             />
           </div>
 
-          <div>
+          <div className="flex items-center justify-between mb-4">
             <button
               type="submit"
-              disabled={isLoading}
-              className={`w-full px-4 py-2 text-white bg-orange-600 rounded-md hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 ${isLoading ? 'opacity-70 cursor-not-allowed' : ''}`}
+              className={`bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline w-full
+                ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
+              disabled={loading}
             >
-              {isLoading ? (
-                <span className="flex items-center justify-center">
-                  <svg className="w-5 h-5 mr-3 -ml-1 text-white animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  Signing in...
-                </span>
-              ) : (
-                'Sign in'
-              )}
+              {loading ? 'Logging in...' : 'Login'}
             </button>
           </div>
         </form>
 
-        <div className="text-center text-xs text-gray-500 mt-4">
-          <p>
-            This is the admin area. Unauthorized access is prohibited.
-          </p>
+        <div className="pt-4 border-t border-gray-200">
+          <h3 className="text-sm font-medium text-gray-700 mb-2">Admin Troubleshooting</h3>
+          <div className="flex flex-col space-y-2">
+            <button
+              onClick={handleDebugAdminStatus}
+              className="text-xs bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-1 px-2 rounded"
+            >
+              Debug Admin Status
+            </button>
+            <button
+              onClick={handleFixAdminRole}
+              className="text-xs bg-yellow-200 hover:bg-yellow-300 text-yellow-800 font-bold py-1 px-2 rounded"
+            >
+              Fix Admin Role
+            </button>
+          </div>
         </div>
       </div>
     </div>

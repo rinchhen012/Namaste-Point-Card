@@ -58,16 +58,45 @@ const AppRouter = () => {
   );
 };
 
-ReactDOM.createRoot(document.getElementById('root')!).render(
-  <React.StrictMode>
-    <AuthProvider>
-      <LanguageProvider>
-        <AdminAuthProvider>
-          <Suspense fallback={<Loading />}>
-            <AppRouter />
-          </Suspense>
-        </AdminAuthProvider>
-      </LanguageProvider>
-    </AuthProvider>
-  </React.StrictMode>
-);
+// Check if the root element exists
+const rootElement = document.getElementById('root');
+
+if (rootElement) {
+  // Check if the root element already has React initialized on it
+  const existingRoot = (window as any).__ADMIN_ROOT__;
+
+  if (existingRoot) {
+    // If the root already exists, just render to it
+    existingRoot.render(
+      <React.StrictMode>
+        <AuthProvider>
+          <LanguageProvider>
+            <AdminAuthProvider>
+              <Suspense fallback={<Loading />}>
+                <AppRouter />
+              </Suspense>
+            </AdminAuthProvider>
+          </LanguageProvider>
+        </AuthProvider>
+      </React.StrictMode>
+    );
+  } else {
+    // Create a new root and store it for future reference
+    const newRoot = ReactDOM.createRoot(rootElement);
+    (window as any).__ADMIN_ROOT__ = newRoot;
+
+    newRoot.render(
+      <React.StrictMode>
+        <AuthProvider>
+          <LanguageProvider>
+            <AdminAuthProvider>
+              <Suspense fallback={<Loading />}>
+                <AppRouter />
+              </Suspense>
+            </AdminAuthProvider>
+          </LanguageProvider>
+        </AuthProvider>
+      </React.StrictMode>
+    );
+  }
+}

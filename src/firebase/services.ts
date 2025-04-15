@@ -566,15 +566,50 @@ export async function validateQRCode(
   success: boolean;
   message: string;
   distance?: number;
+  error?: string;
 }> {
   try {
     // Call the Cloud Function
-    const validateFunction = httpsCallable(functions, 'validateQRCheckIn'); // Renamed back to original
+    const validateFunction = httpsCallable(functions, 'validateQRCheckIn');
     const result = await validateFunction({ qrCode, latitude, longitude });
     return result.data as any;
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error validating QR code:', error);
-    return { success: false, message: 'An error occurred while validating QR code' };
+
+    // Extract Firebase error code if available
+    const errorCode = error.code || '';
+    const errorMessage = error.message || '';
+
+    // Handle specific error types
+    if (errorCode === 'permission-denied' || errorCode.includes('permission')) {
+      return {
+        success: false,
+        message: 'You do not have permission to check in. Please try again later.',
+        error: 'permission_denied'
+      };
+    }
+
+    if (errorCode === 'unavailable' || errorCode.includes('unavailable')) {
+      return {
+        success: false,
+        message: 'Service is currently unavailable. Please try again later.',
+        error: 'service_unavailable'
+      };
+    }
+
+    if (errorMessage.includes('index')) {
+      return {
+        success: false,
+        message: 'The service is not configured correctly. Please contact support.',
+        error: 'missing_index'
+      };
+    }
+
+    return {
+      success: false,
+      message: 'An error occurred while validating QR code. Please try again.',
+      error: 'unknown_error'
+    };
   }
 }
 
@@ -609,12 +644,12 @@ export async function getRewards(): Promise<Reward[]> {
  */
 export async function getAvailableRewards(): Promise<Reward[]> {
   if (import.meta.env.DEV && import.meta.env.VITE_USE_MOCK_AUTH === 'true') {
-    return mockData.rewards.filter(reward => reward.active);
+    return mockData.rewards.filter(reward => reward.isActive);
   }
 
   try {
     const rewardsRef = collection(db, 'rewards');
-    const rewardsQuery = query(rewardsRef, where('active', '==', true));
+    const rewardsQuery = query(rewardsRef, where('isActive', '==', true));
     const rewardsSnapshot = await getDocs(rewardsQuery);
     const rewards: Reward[] = [];
 
@@ -632,9 +667,9 @@ export async function getAvailableRewards(): Promise<Reward[]> {
           en: data.description || '',
           ja: data.descriptionJa || ''
         },
-        pointsCost: data.points || 0,
+        pointsCost: data.pointsCost || data.points || 0,
         type: data.type || 'in_store_item',
-        active: data.active || false,
+        isActive: data.isActive || data.active || false,
         imageUrl: data.imageUrl || ''
       } as Reward);
     });
@@ -668,9 +703,9 @@ export async function getReward(rewardId: string): Promise<Reward | null> {
         en: data.description || '',
         ja: data.descriptionJa || ''
       },
-      pointsCost: data.points || 0,
+      pointsCost: data.pointsCost || data.points || 0,
       type: data.type || 'in_store_item',
-      active: data.active || false,
+      isActive: data.isActive || data.active || false,
       imageUrl: data.imageUrl || ''
     } as Reward;
   } else {
@@ -680,8 +715,6 @@ export async function getReward(rewardId: string): Promise<Reward | null> {
 
 export const redeemReward = async (userId: string, rewardId: string, rewardType: string) => {
   if (import.meta.env.DEV && import.meta.env.VITE_USE_MOCK_AUTH === 'true') {
-    console.log('Using mock redemption process');
-
     // Find the reward in mock data
     const reward = mockData.rewards.find(r => r.id === rewardId);
 
@@ -761,9 +794,9 @@ export const redeemReward = async (userId: string, rewardId: string, rewardType:
         en: rewardData.description || '',
         ja: rewardData.descriptionJa || ''
       },
-      pointsCost: rewardData.points || 0,
+      pointsCost: rewardData.pointsCost || rewardData.points || 0,
       type: rewardData.type || 'in_store_item',
-      active: rewardData.active || false,
+      isActive: rewardData.isActive || rewardData.active || false,
       imageUrl: rewardData.imageUrl || ''
     };
 
@@ -894,7 +927,6 @@ export const getUserRedemptions = async (userId: string): Promise<Redemption[]> 
       });
     });
 
-    console.log('[getUserRedemptions] Returning redemption IDs:', redemptions.map(r => r.id));
     return redemptions;
   } catch (error) {
     console.error('Error getting user redemptions:', error);
@@ -961,19 +993,75 @@ export async function markRedemptionAsUsed(redemptionId: string): Promise<void> 
 }
 
 // Point History
-export async function getUserPointsHistory(userId: string): Promise<PointsTransaction[]> {
-  const q = query(
-    collection(db, 'points_transactions'),
-    where('userId', '==', userId),
-    orderBy('createdAt', 'desc'),
-    limit(50)
-  );
+export const getUserPointsHistory = async (userId: string): Promise<PointsTransaction[]> => {
+  // Mock data for development
+  if (import.meta.env.DEV && import.meta.env.VITE_USE_MOCK_AUTH === 'true') {
+    // Return mock data for development mode
+    return mockData.pointsHistory.filter(item => item.userId === userId).map(item => ({
+      id: item.id,
+      userId: item.userId,
+      points: item.points,
+      type: item.type === 'earn' ? 'in-store' : 'reward-redemption',
+      createdAt: item.timestamp
+    })) as PointsTransaction[];
+  }
 
-  const querySnapshot = await getDocs(q);
-  return querySnapshot.docs.map(doc => ({
-    id: doc.id,
-    ...doc.data()
-  } as PointsTransaction));
+  const auth = getAuth();
+  const currentUser = auth.currentUser;
+
+  if (!currentUser) {
+    console.error('User not authenticated');
+    return []; // Return empty array instead of throwing error
+  }
+
+  if (currentUser.uid !== userId) {
+    console.error('Cannot access another user\'s points history');
+    return []; // Return empty array instead of throwing error
+  }
+
+  try {
+    // Use the explicit index we just deployed
+    const q = query(
+      collection(db, 'points_transactions'),
+      where('userId', '==', userId),
+      orderBy('createdAt', 'desc'),
+      limit(50)
+    );
+
+    try {
+      const querySnapshot = await getDocs(q);
+
+      return querySnapshot.docs.map(doc => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          userId: data.userId,
+          points: data.points || 0,
+          type: data.type || 'in-store',
+          createdAt: data.createdAt,
+          rewardId: data.rewardId,
+          codeId: data.codeId,
+          adminId: data.adminId,
+          note: data.note
+        } as PointsTransaction;
+      });
+    } catch (queryError: any) {
+      // Log specific query error info
+      console.error('Query error details:', queryError);
+
+      // Check if this is an index error and log a helpful message
+      if (queryError.message && queryError.message.includes('index')) {
+        console.error('INDEX ERROR: You need to create a proper index for this query. Look for a link in the console to create it automatically.');
+      } else if (queryError.message && queryError.message.includes('permission')) {
+        console.error('PERMISSION ERROR: This query is being rejected due to insufficient permissions. Check security rules and authentication status.');
+      }
+
+      throw queryError;
+    }
+  } catch (error) {
+    console.error('Error fetching points history:', error);
+    return []; // Return empty array instead of throwing error
+  }
 }
 
 /**
@@ -1207,50 +1295,71 @@ export async function updateUserPassword(currentPassword: string, newPassword: s
 }
 
 // Get the next expiration date for the user's points (oldest earned points)
-export async function getNextPointsExpirationInfo(userId: string): Promise<{ expiresAt: Date } | null> {
+export async function getNextPointsExpirationInfo(userId: string): Promise<{ expiresAt: Date | null; points: number | null }> {
+  if (import.meta.env.DEV && import.meta.env.VITE_USE_MOCK_AUTH === 'true') {
+    // Return mock data for development mode
+    const mockExpiry = new Date();
+    mockExpiry.setDate(mockExpiry.getDate() + 30); // Expires in 30 days
+    return { expiresAt: mockExpiry, points: 100 };
+  }
+
   try {
-    const pointsQuery = query(
-      collection(db, 'points_transactions'),
-      where('userId', '==', userId),
-      where('points', '>', 0), // Only consider earning transactions
-      orderBy('createdAt', 'asc'), // Find the oldest first
-      limit(1) // We only need the very oldest one
+    // Use the getUserPointsHistory function which has proper error handling
+    const pointsHistory = await getUserPointsHistory(userId);
+
+    if (!pointsHistory || pointsHistory.length === 0) {
+      return { expiresAt: null, points: null };
+    }
+
+    // Filter to only include positive point transactions
+    const positivePointsHistory = pointsHistory.filter(
+      transaction => transaction.points > 0
     );
 
-    const querySnapshot = await getDocs(pointsQuery);
-
-    if (querySnapshot.empty) {
-      // User has never earned points
-      return null;
+    if (positivePointsHistory.length === 0) {
+      return { expiresAt: null, points: null };
     }
 
-    const oldestTransaction = querySnapshot.docs[0].data();
-    const createdAt = oldestTransaction.createdAt;
+    // Sort by creation date (oldest first)
+    positivePointsHistory.sort((a, b) => {
+      const aDate = a.createdAt?.toDate().getTime() || 0;
+      const bDate = b.createdAt?.toDate().getTime() || 0;
+      return aDate - bDate;
+    });
 
-    if (!createdAt || typeof createdAt.toDate !== 'function') {
-      console.warn('Oldest transaction missing valid createdAt timestamp');
-      return null;
+    // Get the oldest transaction with positive points
+    const oldestTransaction = positivePointsHistory[0];
+
+    if (!oldestTransaction.createdAt) {
+      return { expiresAt: null, points: null };
     }
 
-    const earnedDate = createdAt.toDate();
-    const expirationDate = new Date(earnedDate);
-    expirationDate.setFullYear(expirationDate.getFullYear() + 1); // Add 1 year
+    // Points expire one year from the transaction date
+    const createdAt = oldestTransaction.createdAt.toDate();
+    const expirationDate = new Date(createdAt);
+    expirationDate.setFullYear(expirationDate.getFullYear() + 1);
 
-    // Optional: Only return if expiring relatively soon (e.g., within 90 days)
-    const now = new Date();
-    const ninetyDaysFromNow = new Date(now);
-    ninetyDaysFromNow.setDate(now.getDate() + 90);
+    // Only show expiration if it's within the next 90 days
+    const ninetyDaysFromNow = new Date();
+    ninetyDaysFromNow.setDate(ninetyDaysFromNow.getDate() + 90);
 
-    if (expirationDate > now && expirationDate <= ninetyDaysFromNow) {
-      return { expiresAt: expirationDate };
-    } else {
-      // Oldest points not expiring soon, or already expired (we don't show past expirations)
-      return null;
+    if (expirationDate > ninetyDaysFromNow) {
+      return { expiresAt: null, points: null };
     }
 
+    return {
+      expiresAt: expirationDate,
+      points: oldestTransaction.points || 0
+    };
   } catch (error) {
-    console.error("Error fetching next points expiration info:", error);
-    // Don't throw, just return null - this is informational
-    return null;
+    console.error('Error fetching points expiration:', error);
+    // Instead of failing completely, return null values
+    return { expiresAt: null, points: null };
   }
+}
+
+// Helper function to check if a date is expired
+function isDateExpired(dateObj: { toDate: () => Date }): boolean {
+  if (!dateObj || typeof dateObj.toDate !== 'function') return true;
+  return dateObj.toDate() < new Date();
 }

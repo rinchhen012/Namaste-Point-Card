@@ -145,8 +145,6 @@ const AdminCoupons: React.FC = () => {
         parseInt(formData.expiryDays.toString())
       );
 
-      console.log("Result from createCoupon:", result);
-
       if (result && result.codes) {
         // Setup the data for the printable view
         const expiryDate = new Date(Date.now() + parseInt(formData.expiryDays.toString()) * 24 * 60 * 60 * 1000);
@@ -155,7 +153,6 @@ const AdminCoupons: React.FC = () => {
           expiresAt: expiryDate
         }));
 
-        console.log("Generated codes array for print:", generatedDataForPrint);
         setNewlyGeneratedCodes(generatedDataForPrint);
         setShowPrintableView(true);
       }
@@ -166,7 +163,6 @@ const AdminCoupons: React.FC = () => {
       setShowCreateForm(false);
       setLoading(false);
     } catch (err) {
-      console.error('Error creating coupons:', err);
       setError('Could not create coupons. Please try again.');
       setLoading(false);
     }

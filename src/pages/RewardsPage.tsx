@@ -57,6 +57,7 @@ const RewardsPage: React.FC = () => {
   const [activeRedemptions, setActiveRedemptions] = useState<Redemption[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showErrorToast, setShowErrorToast] = useState(false);
 
   useEffect(() => {
     if (!currentUser) {
@@ -91,19 +92,28 @@ const RewardsPage: React.FC = () => {
     return userProfile && userProfile.points >= pointsCost;
   };
 
-  const handleRedeemReward = (reward: Reward) => {
-    console.log('[RewardsPage] handleRedeemReward initiating for Reward ID:', reward.id);
+  const handleRedeemReward = async (reward: Reward) => {
+    if (!currentUser || !userProfile) return;
+
+    // Checks if user has enough points
+    if (userProfile.points < reward.pointsCost) {
+      setError(t('rewards.notEnoughPoints'));
+      setShowErrorToast(true);
+      // Hide error after 3 seconds
+      setTimeout(() => {
+        setShowErrorToast(false);
+      }, 3000);
+      return;
+    }
+
+    // Navigate to confirmation/redemption page with the reward data
     navigate(`/redemption/initiate`, { state: { reward } });
   };
 
   const handleViewRedemption = (redemption: Redemption) => {
-    console.log('[RewardsPage] handleViewRedemption received object:', redemption);
-    console.log('[RewardsPage] handleViewRedemption navigating with ID:', redemption.id);
+    // Navigate to the redemption detail page using the redemption ID
     const targetUrl = `/redemption/${redemption.id}`;
-    console.log('[RewardsPage] Navigating to URL:', targetUrl);
-    navigate(targetUrl, {
-      state: { existingRedemption: redemption }
-    });
+    navigate(targetUrl, { state: { existingRedemption: redemption } });
   };
 
   if (!currentUser || !userProfile) {

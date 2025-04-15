@@ -16,7 +16,7 @@ const InfoPage: React.FC = () => {
     phone: '03-6684-8269',
     email: 'support@namastenarimasu.com',
     hours: {
-      en: 'Monday - Sunday: 10:30 AM - 10:30 PM',
+      en: 'Mon - Sun: 10:30 - 22:30',
       ja: '月曜 - 日曜: 10:30 - 22:30'
     },
     website: 'https://www.namastenarimasu.com',

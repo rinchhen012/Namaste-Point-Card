@@ -42,7 +42,6 @@ const RedemptionPage: React.FC = () => {
       const redemptionData = await getRedemption(id);
 
       if (redemptionData) {
-        console.log('Fetched redemption data on mount/nav back:', redemptionData);
         setRedemption(redemptionData);
       } else {
         // If no active redemption found for this ID, show error
@@ -76,7 +75,6 @@ const RedemptionPage: React.FC = () => {
     if (id === 'initiate') {
       // Initiating a new redemption - rely on location.state.reward
       if (reward) {
-        console.log('[RedemptionPage] Initiating new redemption based on state:', reward);
         setConfirming(true); // Go directly to confirmation step
         setLoading(false);
       } else {
@@ -89,7 +87,6 @@ const RedemptionPage: React.FC = () => {
       }
     } else {
       // Viewing an existing redemption - fetch its details using the ID from URL
-      console.log('[RedemptionPage] Attempting to fetch existing redemption for ID:', id);
       fetchRedemptionDetails();
     }
 
@@ -216,8 +213,6 @@ const RedemptionPage: React.FC = () => {
       return;
     }
 
-    console.log('Redemption object:', redemption);
-
     // Check if we have the redemption ID
     let redemptionId: string;
 
@@ -237,7 +232,6 @@ const RedemptionPage: React.FC = () => {
     setError(null);
 
     try {
-      console.log('Marking redemption as used with ID:', redemptionId);
       await markRedemptionAsUsed(redemptionId);
 
       // Show animation before navigating away
