@@ -836,3 +836,186 @@ export async function debugAdminStatus() {
     return false;
   }
 }
+
+/**
+ * Get extended statistics for the admin dashboard
+ * Includes retention rate, average points per user, monthly trends, and popular rewards
+ */
+export const getExtendedStats = async () => {
+  if (import.meta.env.DEV && import.meta.env.VITE_USE_MOCK_AUTH === 'true') {
+    return {
+      retentionRate: 76,
+      avgPointsPerUser: 42,
+      monthlyPointsAwarded: [45, 68, 72, 89, 105, 93],
+      monthlyPointsRedeemed: [23, 35, 42, 57, 63, 48],
+      popularRewards: [
+        { name: 'Free Curry', count: 34 },
+        { name: 'Free Naan', count: 28 },
+        { name: 'Discount Coupon', count: 19 }
+      ],
+      newUsers: [8, 12, 15, 10, 18, 14],
+      months: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun']
+    };
+  }
+
+  try {
+    // Verify admin status
+    const isAdmin = await debugAdminStatus();
+    if (!isAdmin) {
+      throw new Error("Missing or insufficient permissions. User does not have admin role.");
+    }
+
+    // Generate last 6 months array
+    const months = [];
+    const monthlyPointsAwarded = [];
+    const monthlyPointsRedeemed = [];
+    const newUsers = [];
+
+    for (let i = 5; i >= 0; i--) {
+      const date = new Date();
+      date.setMonth(date.getMonth() - i);
+
+      const monthName = date.toLocaleString('en-US', { month: 'short' });
+      months.unshift(monthName);
+
+      // Define start and end of month for queries
+      const startOfMonth = new Date(date.getFullYear(), date.getMonth(), 1);
+      const endOfMonth = new Date(date.getFullYear(), date.getMonth() + 1, 0, 23, 59, 59);
+
+      // Calculate monthly awarded points
+      const earnedPointsQuery = query(
+        collection(db, 'points_history'),
+        where('type', '==', 'earn'),
+        where('timestamp', '>=', Timestamp.fromDate(startOfMonth)),
+        where('timestamp', '<=', Timestamp.fromDate(endOfMonth))
+      );
+
+      const earnedPointsSnapshot = await getDocs(earnedPointsQuery);
+      let monthlyPoints = 0;
+      earnedPointsSnapshot.forEach(doc => {
+        monthlyPoints += doc.data().points;
+      });
+      monthlyPointsAwarded.unshift(monthlyPoints);
+
+      // Calculate monthly redeemed points
+      const redeemedPointsQuery = query(
+        collection(db, 'points_history'),
+        where('type', '==', 'redeem'),
+        where('timestamp', '>=', Timestamp.fromDate(startOfMonth)),
+        where('timestamp', '<=', Timestamp.fromDate(endOfMonth))
+      );
+
+      const redeemedPointsSnapshot = await getDocs(redeemedPointsQuery);
+      let monthlyRedeemed = 0;
+      redeemedPointsSnapshot.forEach(doc => {
+        monthlyRedeemed += Math.abs(doc.data().points);
+      });
+      monthlyPointsRedeemed.unshift(monthlyRedeemed);
+
+      // Calculate new users for this month
+      const newUsersQuery = query(
+        collection(db, 'users'),
+        where('createdAt', '>=', Timestamp.fromDate(startOfMonth)),
+        where('createdAt', '<=', Timestamp.fromDate(endOfMonth))
+      );
+
+      const newUsersSnapshot = await getDocs(newUsersQuery);
+      newUsers.unshift(newUsersSnapshot.size);
+    }
+
+    // Calculate retention rate (active users / total users)
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+    const sixtyDaysAgo = new Date();
+    sixtyDaysAgo.setDate(sixtyDaysAgo.getDate() - 60);
+
+    const recent30DaysQuery = query(
+      collection(db, 'users'),
+      where('lastVisitScan', '>=', Timestamp.fromDate(thirtyDaysAgo))
+    );
+
+    const previous30DaysQuery = query(
+      collection(db, 'users'),
+      where('lastVisitScan', '>=', Timestamp.fromDate(sixtyDaysAgo)),
+      where('lastVisitScan', '<', Timestamp.fromDate(thirtyDaysAgo))
+    );
+
+    const recent30DaysSnapshot = await getDocs(recent30DaysQuery);
+    const previous30DaysSnapshot = await getDocs(previous30DaysQuery);
+
+    // Calculate what percentage of users from the previous 30 days returned in the most recent 30 days
+    const retentionRate = previous30DaysSnapshot.size > 0
+      ? Math.round((recent30DaysSnapshot.size / previous30DaysSnapshot.size) * 100)
+      : 0;
+
+    // Calculate average points per user
+    const usersWithPointsQuery = query(
+      collection(db, 'users'),
+      where('points', '>', 0)
+    );
+
+    const usersWithPointsSnapshot = await getDocs(usersWithPointsQuery);
+    let totalPoints = 0;
+    usersWithPointsSnapshot.forEach(doc => {
+      totalPoints += doc.data().points || 0;
+    });
+
+    const avgPointsPerUser = usersWithPointsSnapshot.size > 0
+      ? Math.round(totalPoints / usersWithPointsSnapshot.size)
+      : 0;
+
+    // Get popular rewards based on redemption count
+    const redemptionsRef = collection(db, 'redemptions');
+    const allRedemptionsSnapshot = await getDocs(redemptionsRef);
+
+    // Count rewards
+    const rewardCounts = {};
+    const rewardNames = {};
+
+    // First get all rewards to have their names
+    const rewardsSnapshot = await getDocs(collection(db, 'rewards'));
+    rewardsSnapshot.forEach(doc => {
+      const data = doc.data();
+      rewardNames[doc.id] = data.name || 'Unknown Reward';
+    });
+
+    // Count redemptions by reward
+    allRedemptionsSnapshot.forEach(doc => {
+      const data = doc.data();
+      const rewardId = data.rewardId;
+      if (rewardId) {
+        rewardCounts[rewardId] = (rewardCounts[rewardId] || 0) + 1;
+      }
+    });
+
+    // Convert to array and sort
+    const popularRewards = Object.entries(rewardCounts)
+      .map(([rewardId, count]) => ({
+        name: rewardNames[rewardId] || 'Unknown Reward',
+        count: count as number
+      }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 5);  // Top 5 rewards
+
+    return {
+      retentionRate,
+      avgPointsPerUser,
+      monthlyPointsAwarded,
+      monthlyPointsRedeemed,
+      popularRewards,
+      newUsers,
+      months
+    };
+  } catch (error) {
+    console.error('Error getting extended stats:', error);
+
+    // If it's a permissions error, we already have a more specific error message
+    if (error.message && error.message.includes("Missing or insufficient permissions")) {
+      throw error;
+    }
+
+    // For other errors, throw a generic error
+    throw new Error(`Failed to fetch extended statistics: ${error.message || 'Unknown error'}`);
+  }
+};
