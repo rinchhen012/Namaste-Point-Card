@@ -4,6 +4,7 @@ import Layout from '../components/Layout/Layout';
 import { useLanguage } from '../contexts/LanguageContext';
 import { getStoreInfoForUser, getFAQsForUser } from '../firebase/services'; // Import fetching functions
 import { Timestamp } from 'firebase/firestore'; // Import Timestamp for type checking
+import { APP_VERSION } from '../config/appConfig'; // Import app version
 
 // Define interfaces for the fetched data for better type safety
 interface StoreInfo {
@@ -197,7 +198,7 @@ const InfoPage: React.FC = () => {
 
         {/* App Version (Consider making this dynamic if needed) */}
         <p className="text-center text-xs text-gray-500 mt-6">
-          {t('info.appVersion')} 1.0.0
+          App Version {APP_VERSION}
         </p>
       </div>
     </Layout>

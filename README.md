@@ -27,15 +27,20 @@ Points can be redeemed for various rewards applicable to future in-store visits 
   - View points balance
   - Track point history
   - Manage language preferences
+  - Control notification preferences
 - **Admin Interface:**
   - User management
   - Reward creation and management
   - Generate unique order codes
   - View statistics and analytics
+  - Send notifications to users
 - **PWA Capabilities:**
   - Installable on iOS/Android home screen
   - Offline support
-  - Push notifications
+  - Push notifications for:
+    - Points expiration reminders
+    - New reward opportunities
+    - Special offers and events
   - Camera access for QR scanning
   - Geolocation for in-store validation
 
@@ -146,7 +151,15 @@ namaste-point-card/
    firebase deploy --only functions
    ```
 
-3. Deploy to Firebase Hosting:
+3. Set up VAPID keys for web push notifications:
+
+   ```
+   npx web-push generate-vapid-keys
+   ```
+
+   Add keys to your Firebase environment configuration.
+
+4. Deploy to Firebase Hosting:
    ```
    npm run build
    firebase deploy --only hosting
@@ -155,6 +168,8 @@ namaste-point-card/
 For detailed instructions on setting up and working with Firebase Functions, see [FIREBASE-FUNCTIONS.md](FIREBASE-FUNCTIONS.md).
 
 For information about the admin interface, see [README-ADMIN.md](README-ADMIN.md).
+
+For push notification setup and troubleshooting, see [NOTIFICATIONS.md](NOTIFICATIONS.md).
 
 For production deployment instructions, see [DEPLOY-GUIDE.md](DEPLOY-GUIDE.md).
 
@@ -166,6 +181,10 @@ This application uses Firebase Cloud Functions for several key features:
 2. **checkInAtStore**: Verifies user location for in-store visits
 3. **generateOnlineOrderCodes**: Admin function to create new order codes
 4. **getAdminStats**: Provides statistics for the admin dashboard
+5. **sendPushNotification**: Sends targeted notifications to specific users
+6. **broadcastPushNotification**: Sends notifications to users with specific preferences
+7. **registerFCMToken**: Registers a Firebase Cloud Messaging token for a user
+8. **unregisterFCMToken**: Removes a Firebase Cloud Messaging token
 
 ## Data Model
 

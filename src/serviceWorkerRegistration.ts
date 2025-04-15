@@ -11,7 +11,28 @@ const isLocalhost = Boolean(
 type Config = {
   onSuccess?: (registration: ServiceWorkerRegistration) => void;
   onUpdate?: (registration: ServiceWorkerRegistration) => void;
+  onNotificationPermissionChange?: (permission: NotificationPermission) => void;
+  enabledNotifications?: boolean;
 };
+
+// Store the update handler so we can use it outside the register function
+let updateCallback: ((registration: ServiceWorkerRegistration) => void) | null = null;
+
+// This function is used to notify new content is available
+export function applyUpdate() {
+  if (window.serviceWorkerRegistration) {
+    const registrationWaiting = window.serviceWorkerRegistration.waiting;
+
+    if (registrationWaiting) {
+      registrationWaiting.postMessage({ type: 'SKIP_WAITING' });
+      registrationWaiting.addEventListener('statechange', (e) => {
+        if ((e.target as ServiceWorker).state === 'activated') {
+          window.location.reload();
+        }
+      });
+    }
+  }
+}
 
 export function register(config?: Config): void {
   if ('serviceWorker' in navigator) {
@@ -26,19 +47,50 @@ export function register(config?: Config): void {
     window.addEventListener('load', () => {
       const swUrl = `${import.meta.env.BASE_URL}service-worker.js`;
 
+      // Save the update callback for external use
+      if (config && config.onUpdate) {
+        updateCallback = config.onUpdate;
+      }
+
       if (isLocalhost) {
         // This is running on localhost. Check if a service worker still exists or not.
         checkValidServiceWorker(swUrl, config);
 
-        navigator.serviceWorker.ready.then(() => {
+        navigator.serviceWorker.ready.then((registration) => {
           console.log(
             'This web app is being served cache-first by a service worker.'
           );
+
+          // Handle notification permission changes when requested
+          if (config?.enabledNotifications && 'Notification' in window) {
+            const permissionState = Notification.permission;
+
+            if (config.onNotificationPermissionChange) {
+              config.onNotificationPermissionChange(permissionState);
+            }
+
+            // Listen for permission changes (this works in some browsers)
+            if (navigator.permissions && navigator.permissions.query) {
+              navigator.permissions.query({ name: 'notifications' }).then((status) => {
+                status.onchange = function() {
+                  if (config.onNotificationPermissionChange) {
+                    config.onNotificationPermissionChange(Notification.permission);
+                  }
+                };
+              });
+            }
+          }
         });
       } else {
         // Is not localhost. Just register service worker
         registerValidSW(swUrl, config);
       }
+    });
+
+    // Listen for 'controllerchange' event to reload on activation of updated service worker
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      console.log('New service worker activated, reloading for fresh content');
+      window.location.reload();
     });
   }
 }
@@ -47,6 +99,9 @@ function registerValidSW(swUrl: string, config?: Config): void {
   navigator.serviceWorker
     .register(swUrl)
     .then((registration) => {
+      // Store the registration globally so we can access it later for updates
+      window.serviceWorkerRegistration = registration;
+
       registration.onupdatefound = () => {
         const installingWorker = registration.installing;
         if (installingWorker == null) {
@@ -81,6 +136,26 @@ function registerValidSW(swUrl: string, config?: Config): void {
           }
         };
       };
+
+      // Handle notification permission changes when requested
+      if (config?.enabledNotifications && 'Notification' in window) {
+        const permissionState = Notification.permission;
+
+        if (config.onNotificationPermissionChange) {
+          config.onNotificationPermissionChange(permissionState);
+        }
+
+        // Listen for permission changes (this works in some browsers)
+        if (navigator.permissions && navigator.permissions.query) {
+          navigator.permissions.query({ name: 'notifications' as PermissionName }).then((status) => {
+            status.onchange = function() {
+              if (config.onNotificationPermissionChange) {
+                config.onNotificationPermissionChange(Notification.permission);
+              }
+            };
+          });
+        }
+      }
     })
     .catch((error) => {
       console.error('Error during service worker registration:', error);
@@ -124,5 +199,12 @@ export function unregister(): void {
       .catch((error) => {
         console.error(error.message);
       });
+  }
+}
+
+// Extend Window interface to include the service worker registration
+declare global {
+  interface Window {
+    serviceWorkerRegistration?: ServiceWorkerRegistration;
   }
 }

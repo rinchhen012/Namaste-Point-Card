@@ -19,7 +19,15 @@
     "button": "Button",
     "success": "Success!",
     "edit": "Edit",
-    "delete": "Delete"
+    "delete": "Delete",
+    "enabled": "Enabled",
+    "disabled": "Disabled",
+    "blocked": "Blocked",
+    "viewAll": "View All",
+    "hide": "Hide",
+    "viewHistory": "View History",
+    "viewRedemptionHistory": "View Redemption History",
+    "viewPointsHistory": "View Points History"
   },
   "auth": {
     "login": "Login",
@@ -194,7 +202,27 @@
     "confirmNewPassword": "Confirm New Password",
     "passwordUpdateSuccess": "Password updated successfully!",
     "passwordChangeNotApplicable": "Password change is not available for your sign-in method.",
-    "pointsExpiringSoon": "Some points are expiring soon on {{date}}"
+    "pointsExpiringSoon": "Some points are expiring soon on {{date}}",
+    "confirmDelete": "Delete Account Confirmation",
+    "deleteWarning": "All your data including points and redemption history will be permanently deleted.",
+    "logoutConfirmation": "Are you sure you want to log out?"
+  },
+  "notifications": {
+    "notSupported": "Push notifications are not supported in your browser.",
+    "permissionTitle": "Enable Notifications",
+    "permissionDescription": "Get notified about point updates, expiring rewards, and special offers. You can customize these later.",
+    "allowButton": "Allow Notifications",
+    "maybeLater": "Maybe Later",
+    "blockedTitle": "Notifications are blocked",
+    "blockedMessage": "To enable notifications, please update your browser settings:",
+    "step1": "Click the lock/info icon in your browser address bar",
+    "step2": "Find \"Notifications\" in the site settings",
+    "step3": "Change from \"Block\" to \"Allow\"",
+    "preferences": "Notification Preferences",
+    "toggleAll": "Enable all notifications",
+    "pointsUpdates": "Points updates",
+    "expiringRewards": "Expiring rewards",
+    "specialOffers": "Special offers and promotions"
   },
   "pointsHistory": {
     "history": "Points History",

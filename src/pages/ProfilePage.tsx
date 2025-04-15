@@ -9,6 +9,9 @@ import { PointsTransaction } from '../types/index';
 import ConfirmationModal from '../components/Admin/ConfirmationModal';
 import ChangePasswordModal from '../components/ChangePasswordModal';
 import { formatDate } from '../utils/dateUtils';
+import NotificationSettings from '../components/NotificationSettings';
+import { getNotificationPermissionState, isPushNotificationSupported, requestNotificationPermission, registerPushSubscription, saveSubscriptionToUserProfile } from '../utils/notificationUtils';
+import { APP_VERSION } from '../config/appConfig';
 
 const ProfilePage: React.FC = () => {
   const { t } = useTranslation();
@@ -21,6 +24,7 @@ const ProfilePage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const [isEditingName, setIsEditingName] = useState(false);
   const [newName, setNewName] = useState(userProfile?.displayName || '');
   const [editError, setEditError] = useState<string | null>(null);
@@ -28,6 +32,28 @@ const ProfilePage: React.FC = () => {
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
   const [nextExpiration, setNextExpiration] = useState<Date | null>(null);
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
+  const hasCheckedPermission = useRef(false);
+  const [isHistoryExpanded, setIsHistoryExpanded] = useState(false);
+  const [notificationPermission, setNotificationPermission] = useState<NotificationPermission | null>(null);
+  const [showNotificationSettings, setShowNotificationSettings] = useState(false);
+
+  useEffect(() => {
+    // Check notification permission state silently (without showing UI)
+    const checkNotificationPermission = async () => {
+      if (!currentUser || hasCheckedPermission.current) return;
+
+      hasCheckedPermission.current = true;
+
+      if (isPushNotificationSupported()) {
+        const permission = await getNotificationPermissionState();
+        setNotificationPermission(permission);
+      }
+    };
+
+    if (userProfile) {
+      checkNotificationPermission();
+    }
+  }, [currentUser, userProfile]);
 
   useEffect(() => {
     if (!currentUser) {
@@ -78,6 +104,10 @@ const ProfilePage: React.FC = () => {
       console.error('Logout error:', err);
       setError(t('common.error'));
     }
+  };
+
+  const handleLogoutClick = () => {
+    setIsLogoutModalOpen(true);
   };
 
   const handleDeleteAccount = async () => {
@@ -154,6 +184,39 @@ const ProfilePage: React.FC = () => {
     }
   };
 
+  const handleToggleNotifications = async () => {
+    if (!isPushNotificationSupported()) return;
+
+    if (notificationPermission === 'granted') {
+      setShowNotificationSettings(true);
+    } else {
+      try {
+        const permission = await requestNotificationPermission();
+        setNotificationPermission(permission);
+
+        if (permission === 'granted' && currentUser && userProfile) {
+          const subscription = await registerPushSubscription();
+          if (subscription) {
+            await saveSubscriptionToUserProfile(
+              currentUser.uid,
+              subscription,
+              {
+                pointsUpdates: true,
+                expiringRewards: true,
+                specialOffers: true
+              }
+            );
+
+            // Show detailed settings after enabling
+            setShowNotificationSettings(true);
+          }
+        }
+      } catch (error) {
+        console.error('Error requesting notification permission:', error);
+      }
+    }
+  };
+
   if (!currentUser || !userProfile) {
     return null;
   }
@@ -222,166 +285,205 @@ const ProfilePage: React.FC = () => {
   };
 
   return (
-    <Layout title={t('profile.myProfile')}>
-      <div className="p-4 max-w-md mx-auto">
-        {/* User Info */}
-        <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-          <div className="flex items-start mb-4">
-            <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center text-2xl font-bold text-gray-600 mr-4 flex-shrink-0">
-              {userProfile.displayName.charAt(0)}
+    <Layout title={language === 'ja' ? 'プロフィール' : 'Profile'}>
+      <div className="p-4 pt-4 pb-0 bg-gray-50 flex flex-col">
+        {/* Point Summary Card */}
+        <div className="mb-4 bg-white rounded-lg shadow-sm overflow-hidden">
+          <div className="bg-primary text-white p-6">
+            <div className="flex items-center justify-between mb-1">
+              <h2 className="text-xl font-semibold">{userProfile.displayName}</h2>
+              <button
+                onClick={handleEditName}
+                className="text-white/80 hover:text-white transition-colors text-sm flex items-center"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                </svg>
+                {t('common.edit')}
+              </button>
             </div>
-            <div className="flex-grow min-w-0">
-              {isEditingName ? (
-                <div className="mb-2">
-                  <input
-                    ref={nameInputRef}
-                    type="text"
-                    value={newName}
-                    onChange={(e) => setNewName(e.target.value)}
-                    className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
-                    maxLength={50}
-                  />
-                  {editError && <p className="text-red-600 text-xs mt-1">{editError}</p>}
-                  <div className="flex space-x-2 mt-2">
+            <p className="text-white/80 text-sm">{userProfile.email}</p>
+          </div>
+
+          {isEditingName && (
+            <div className="px-6 py-4 bg-gray-50 border-b">
+              <div className="flex">
+                <input
+                  type="text"
+                  ref={nameInputRef}
+                  value={newName}
+                  onChange={(e) => setNewName(e.target.value)}
+                  className="p-2 border rounded-l-md flex-grow text-sm"
+                  disabled={loading}
+                  placeholder={t('profile.displayName')}
+                />
+                <button
+                  onClick={handleSaveName}
+                  className="px-3 py-2 bg-primary text-white rounded-none text-sm hover:bg-primary-dark disabled:opacity-50"
+                  disabled={loading}
+                >
+                  {t('common.save')}
+                </button>
+                <button
+                  onClick={handleCancelEditName}
+                  className="px-3 py-2 border-t border-r border-b rounded-r-md text-sm hover:bg-gray-50 disabled:opacity-50"
+                  disabled={loading}
+                >
+                  {t('common.cancel')}
+                </button>
+              </div>
+              {editError && <p className="text-red-500 text-xs mt-1">{editError}</p>}
+            </div>
+          )}
+        </div>
+
+        {/* Settings Card */}
+        <div className="mb-0 bg-white rounded-lg shadow-sm divide-y">
+          {/* Account Management */}
+          <div className="p-5">
+            <h3 className="text-lg font-medium mb-4">{t('profile.settings')}</h3>
+            <div className="space-y-3">
+              <button
+                onClick={() => navigate('/redemption-history')}
+                className="w-full py-2 px-4 border border-gray-300 rounded-md text-sm font-medium hover:bg-gray-50 flex items-center"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                {language === 'ja' ? '履歴を見る' : 'View History'}
+              </button>
+
+              <button
+                onClick={toggleLanguage}
+                className="w-full py-2 px-4 border border-gray-300 rounded-md text-sm font-medium hover:bg-gray-50 flex items-center justify-between"
+              >
+                <div className="flex items-center">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129" />
+                  </svg>
+                  {t('profile.language')}
+                </div>
+                <span className="text-gray-500">{language === 'ja' ? '日本語' : 'English'}</span>
+              </button>
+
+              <button
+                onClick={handleToggleNotifications}
+                className="w-full py-2 px-4 border border-gray-300 rounded-md text-sm font-medium hover:bg-gray-50 flex items-center justify-between"
+              >
+                <div className="flex items-center">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                  </svg>
+                  {t('profile.notifications')}
+                </div>
+                <div className="flex items-center">
+                  <span className="text-gray-500 mr-2">
+                    {notificationPermission === 'granted'
+                      ? t('common.enabled')
+                      : notificationPermission === 'denied'
+                        ? t('common.blocked')
+                        : t('common.disabled')}
+                  </span>
+                  <div className={`h-3 w-3 rounded-full ${
+                    notificationPermission === 'granted'
+                      ? 'bg-green-500'
+                      : notificationPermission === 'denied'
+                        ? 'bg-red-500'
+                        : 'bg-gray-300'
+                  }`}></div>
+                </div>
+              </button>
+
+              {notificationPermission === 'denied' && (
+                <div className="mt-1 p-3 bg-amber-50 text-amber-800 rounded-md text-xs">
+                  <p className="font-medium mb-1">{t('notifications.blockedTitle', 'Notifications are blocked')}</p>
+                  <p>{t('notifications.blockedMessage', 'To enable notifications, please update your browser settings:')}</p>
+                  <ol className="ml-4 mt-1 list-decimal">
+                    <li>{t('notifications.step1', 'Click the lock/info icon in your browser address bar')}</li>
+                    <li>{t('notifications.step2', 'Find "Notifications" in the site settings')}</li>
+                    <li>{t('notifications.step3', 'Change from "Block" to "Allow"')}</li>
+                  </ol>
+                </div>
+              )}
+
+              {showNotificationSettings && notificationPermission === 'granted' && (
+                <div className="mt-2 p-4 bg-gray-50 rounded-md text-sm">
+                  <NotificationSettings />
+                  <div className="mt-3 flex justify-end">
                     <button
-                      onClick={handleSaveName}
-                      disabled={loading}
-                      className="px-3 py-1 text-sm bg-primary text-white rounded hover:bg-primary-dark disabled:opacity-50"
+                      onClick={() => setShowNotificationSettings(false)}
+                      className="px-3 py-1 text-xs text-gray-600 hover:text-gray-800"
                     >
-                      {loading ? t('common.saving') : t('common.save')}
-                    </button>
-                    <button
-                      onClick={handleCancelEditName}
-                      disabled={loading}
-                      className="px-3 py-1 text-sm bg-gray-200 text-gray-700 rounded hover:bg-gray-300 disabled:opacity-50"
-                    >
-                      {t('common.cancel')}
+                      {t('common.close')}
                     </button>
                   </div>
                 </div>
-              ) : (
-                <div className="flex items-center">
-                  <h2 className="text-xl font-medium truncate mr-2">{userProfile.displayName}</h2>
-                  <button onClick={handleEditName} className="text-primary hover:text-primary-dark">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                      <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
-                    </svg>
-                  </button>
-                </div>
               )}
-              <p className="text-gray-600 break-words">{userProfile.email}</p>
-            </div>
-          </div>
 
-          <div className="flex items-baseline mb-1">
-            <span className="text-2xl font-bold text-primary">{userProfile.points}</span>
-            <span className="ml-2 text-sm text-gray-500">{t('common.points')}</span>
-          </div>
+              <button
+                onClick={handleOpenPasswordModal}
+                className="w-full py-2 px-4 border border-gray-300 rounded-md text-sm font-medium hover:bg-gray-50 flex items-center"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                </svg>
+                {t('profile.changePassword')}
+              </button>
 
-          {nextExpiration && (
-            <div className="mt-2 p-3 bg-amber-50 border border-amber-200 rounded-md text-xs text-amber-800">
-              <p>{t('profile.pointsExpiringSoon', { date: formatDate(nextExpiration, language) })}</p>
-            </div>
-          )}
-        </div>
+              <button
+                onClick={handleLogoutClick}
+                className="w-full py-2 px-4 border border-gray-300 rounded-md text-sm font-medium hover:bg-gray-50 flex items-center"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                </svg>
+                {t('auth.logout')}
+              </button>
 
-        {/* Settings */}
-        <div className="bg-white rounded-lg shadow-md overflow-hidden mb-6">
-          <div className="p-4 border-b border-gray-100">
-            <h3 className="font-medium">{t('profile.settings')}</h3>
-          </div>
+              <button
+                onClick={() => setIsDeleteModalOpen(true)}
+                className="w-full py-2 px-4 border border-red-300 text-red-600 rounded-md text-sm font-medium hover:bg-red-50 flex items-center"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+                {t('auth.deleteAccount')}
+              </button>
 
-          <button
-            onClick={toggleLanguage}
-            className="w-full flex justify-between items-center p-4 text-left hover:bg-gray-50 border-b border-gray-100"
-          >
-            <div>
-              <p className="font-medium">{t('profile.language')}</p>
-              <p className="text-sm text-gray-600">
-                {language === 'ja' ? '日本語' : 'English'}
-              </p>
-            </div>
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
-              <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
-            </svg>
-          </button>
-
-          {(currentUser?.providerData?.some(provider => provider.providerId === 'password') || currentUser?.email) && (
-            <button
-              onClick={handleOpenPasswordModal}
-              className="w-full flex justify-between items-center p-4 text-left hover:bg-gray-50 border-b border-gray-100"
-            >
-              <div className="flex items-center">
-                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-gray-500" viewBox="0 0 20 20" fill="currentColor">
-                   <path fillRule="evenodd" d="M18 8a6 6 0 11-12 0 6 6 0 0112 0zM7 8a3 3 0 116 0 3 3 0 01-6 0zm0 7a4 4 0 00-4 4v1a1 1 0 001 1h8a1 1 0 001-1v-1a4 4 0 00-4-4z" clipRule="evenodd" />
-                 </svg>
-                <p className="font-medium">{t('profile.changePassword')}</p>
+              <div className="pt-4 mt-4 border-t border-gray-200 text-center">
+                <p className="text-xs text-gray-500">App Version {APP_VERSION}</p>
               </div>
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
-              </svg>
-            </button>
-          )}
-
-          {/* View History Button */}
-          <button
-            onClick={() => navigate('/redemption-history')}
-            className="w-full flex justify-between items-center p-4 text-left hover:bg-gray-50"
-          >
-            <div className="flex items-center">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              <p className="font-medium">{t('rewards.viewHistory')}</p>
             </div>
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
-              <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
-            </svg>
-          </button>
+          </div>
         </div>
-
-        {/* Buttons */}
-        <div className="space-y-4">
-          {/* Logout Button */}
-          <button
-            onClick={handleLogout}
-            className="w-full py-3 rounded-lg border border-red-300 text-red-600 font-medium"
-          >
-            {t('auth.logout')}
-          </button>
-
-          {/* Delete Account Button */}
-          <button
-            onClick={() => setIsDeleteModalOpen(true)}
-            className="w-full py-3 rounded-lg bg-red-600 text-white font-medium"
-          >
-            {t('auth.deleteAccount')}
-          </button>
-        </div>
-
-        {/* App Version */}
-        <p className="text-center text-xs text-gray-500 mt-4">
-          {t('profile.version')} 1.0.0
-        </p>
       </div>
 
       {/* Delete Account Confirmation Modal */}
       <ConfirmationModal
         isOpen={isDeleteModalOpen}
-        onClose={() => setIsDeleteModalOpen(false)}
-        onConfirm={handleDeleteAccount}
-        title={t('auth.deleteAccountConfirmTitle')}
-        message={
-          <div>
-            <p>{t('auth.deleteAccountConfirmMessage')}</p>
-            <p className="mt-2 font-bold text-red-600">{t('auth.deleteAccountWarning')}</p>
-          </div>
-        }
+        title={t('profile.confirmDelete')}
+        message={t('profile.deleteWarning')}
         confirmButtonText={t('common.delete')}
         cancelButtonText={t('common.cancel')}
-        confirmButtonColor="red"
+        onConfirm={handleDeleteAccount}
+        onClose={() => setIsDeleteModalOpen(false)}
         isLoading={isDeleting}
+        confirmButtonColor="red"
       />
+
+      {/* Logout Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={isLogoutModalOpen}
+        title={t('auth.logout')}
+        message={t('profile.logoutConfirmation', 'Are you sure you want to log out?')}
+        confirmButtonText={t('auth.logout')}
+        cancelButtonText={t('common.cancel')}
+        onConfirm={handleLogout}
+        onClose={() => setIsLogoutModalOpen(false)}
+        confirmButtonColor="blue"
+      />
+
+      {/* Change Password Modal */}
       <ChangePasswordModal
         isOpen={isPasswordModalOpen}
         onClose={() => setIsPasswordModalOpen(false)}

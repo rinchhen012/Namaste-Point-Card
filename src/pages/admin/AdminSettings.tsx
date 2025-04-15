@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { httpsCallable } from 'firebase/functions';
 import { functions } from '../../firebase/config';
+import { APP_VERSION } from '../../config/appConfig'; // Import app version
 
 const AdminSettings: React.FC = () => {
   const [loading, setLoading] = useState(false);
@@ -95,7 +96,7 @@ const AdminSettings: React.FC = () => {
           <div className="space-y-4">
             <div>
               <h3 className="text-sm font-medium text-gray-500">Application Version</h3>
-              <p className="text-lg">1.0.0</p>
+              <p className="text-lg">{APP_VERSION}</p>
             </div>
 
             <div>
