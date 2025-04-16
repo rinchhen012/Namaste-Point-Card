@@ -33,9 +33,9 @@ export interface Coupon {
   description: string;
   descriptionJa: string;
   pointsCost: number;
+  imageUrl: string;
   isActive: boolean;
   couponType: 'in_store' | 'online_delivery';
-  imageUrl?: string;
 }
 
 // For backwards compatibility
