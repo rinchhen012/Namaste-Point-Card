@@ -9,8 +9,6 @@ import { PointsTransaction } from '../types/index';
 import ConfirmationModal from '../components/Admin/ConfirmationModal';
 import ChangePasswordModal from '../components/ChangePasswordModal';
 import { formatDate } from '../utils/dateUtils';
-import NotificationSettings from '../components/NotificationSettings';
-import { getNotificationPermissionState, isPushNotificationSupported, requestNotificationPermission, registerPushSubscription, saveSubscriptionToUserProfile } from '../utils/notificationUtils';
 import { APP_VERSION } from '../config/appConfig';
 
 const ProfilePage: React.FC = () => {
@@ -32,28 +30,7 @@ const ProfilePage: React.FC = () => {
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
   const [nextExpiration, setNextExpiration] = useState<Date | null>(null);
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
-  const hasCheckedPermission = useRef(false);
   const [isHistoryExpanded, setIsHistoryExpanded] = useState(false);
-  const [notificationPermission, setNotificationPermission] = useState<NotificationPermission | null>(null);
-  const [showNotificationSettings, setShowNotificationSettings] = useState(false);
-
-  useEffect(() => {
-    // Check notification permission state silently (without showing UI)
-    const checkNotificationPermission = async () => {
-      if (!currentUser || hasCheckedPermission.current) return;
-
-      hasCheckedPermission.current = true;
-
-      if (isPushNotificationSupported()) {
-        const permission = await getNotificationPermissionState();
-        setNotificationPermission(permission);
-      }
-    };
-
-    if (userProfile) {
-      checkNotificationPermission();
-    }
-  }, [currentUser, userProfile]);
 
   useEffect(() => {
     if (!currentUser) {
@@ -181,39 +158,6 @@ const ProfilePage: React.FC = () => {
       setIsPasswordModalOpen(true);
     } else {
       setError(t('profile.passwordChangeNotApplicable'));
-    }
-  };
-
-  const handleToggleNotifications = async () => {
-    if (!isPushNotificationSupported()) return;
-
-    if (notificationPermission === 'granted') {
-      setShowNotificationSettings(true);
-    } else {
-      try {
-        const permission = await requestNotificationPermission();
-        setNotificationPermission(permission);
-
-        if (permission === 'granted' && currentUser && userProfile) {
-          const subscription = await registerPushSubscription();
-          if (subscription) {
-            await saveSubscriptionToUserProfile(
-              currentUser.uid,
-              subscription,
-              {
-                pointsUpdates: true,
-                expiringRewards: true,
-                specialOffers: true
-              }
-            );
-
-            // Show detailed settings after enabling
-            setShowNotificationSettings(true);
-          }
-        }
-      } catch (error) {
-        console.error('Error requesting notification permission:', error);
-      }
     }
   };
 
@@ -365,60 +309,6 @@ const ProfilePage: React.FC = () => {
                 </div>
                 <span className="text-gray-500">{language === 'ja' ? '日本語' : 'English'}</span>
               </button>
-
-              <button
-                onClick={handleToggleNotifications}
-                className="w-full py-2 px-4 border border-gray-300 rounded-md text-sm font-medium hover:bg-gray-50 flex items-center justify-between"
-              >
-                <div className="flex items-center">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-                  </svg>
-                  {t('profile.notifications')}
-                </div>
-                <div className="flex items-center">
-                  <span className="text-gray-500 mr-2">
-                    {notificationPermission === 'granted'
-                      ? t('common.enabled')
-                      : notificationPermission === 'denied'
-                        ? t('common.blocked')
-                        : t('common.disabled')}
-                  </span>
-                  <div className={`h-3 w-3 rounded-full ${
-                    notificationPermission === 'granted'
-                      ? 'bg-green-500'
-                      : notificationPermission === 'denied'
-                        ? 'bg-red-500'
-                        : 'bg-gray-300'
-                  }`}></div>
-                </div>
-              </button>
-
-              {notificationPermission === 'denied' && (
-                <div className="mt-1 p-3 bg-amber-50 text-amber-800 rounded-md text-xs">
-                  <p className="font-medium mb-1">{t('notifications.blockedTitle', 'Notifications are blocked')}</p>
-                  <p>{t('notifications.blockedMessage', 'To enable notifications, please update your browser settings:')}</p>
-                  <ol className="ml-4 mt-1 list-decimal">
-                    <li>{t('notifications.step1', 'Click the lock/info icon in your browser address bar')}</li>
-                    <li>{t('notifications.step2', 'Find "Notifications" in the site settings')}</li>
-                    <li>{t('notifications.step3', 'Change from "Block" to "Allow"')}</li>
-                  </ol>
-                </div>
-              )}
-
-              {showNotificationSettings && notificationPermission === 'granted' && (
-                <div className="mt-2 p-4 bg-gray-50 rounded-md text-sm">
-                  <NotificationSettings />
-                  <div className="mt-3 flex justify-end">
-                    <button
-                      onClick={() => setShowNotificationSettings(false)}
-                      className="px-3 py-1 text-xs text-gray-600 hover:text-gray-800"
-                    >
-                      {t('common.close')}
-                    </button>
-                  </div>
-                </div>
-              )}
 
               <button
                 onClick={handleOpenPasswordModal}

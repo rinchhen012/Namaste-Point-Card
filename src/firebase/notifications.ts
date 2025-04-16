@@ -1,184 +1,42 @@
-import { getFirestore, collection, query, where, getDocs, Timestamp } from 'firebase/firestore';
-import { getFunctions, httpsCallable } from 'firebase/functions';
-import { getMessaging, getToken, onMessage, deleteToken } from 'firebase/messaging';
-import { app } from './firebase';
-import { getAuth } from 'firebase/auth';
-import { firestore } from './firebase';
-import { doc, updateDoc, getDoc, setDoc, deleteField } from 'firebase/firestore';
+import { Timestamp, updateDoc, doc, getDoc } from 'firebase/firestore';
 import { db } from './config';
-import { UserProfile, Redemption } from '../types';
-import { getUser } from './services';
 
-// Add type declaration for window.FIREBASE_CONFIG
-declare global {
-  interface Window {
-    FIREBASE_CONFIG: any;
-  }
-}
+// NOTICE: Firebase Messaging functionality is temporarily disabled
+console.log('Firebase Cloud Messaging functionality is temporarily disabled');
 
-let messaging: any = null;
+// Messaging is set to null to prevent any actual messaging functionality
+const messaging = null;
 
-try {
-  messaging = getMessaging(app);
-} catch (error) {
-  console.error('Error initializing messaging:', error);
-}
-
-// Service worker registration for push notifications
+// Service worker registration for push notifications - disabled
 export const registerServiceWorker = async () => {
-  if ('serviceWorker' in navigator) {
-    try {
-      // Pass Firebase config to the service worker
-      const publicVapidKey = process.env.REACT_APP_FIREBASE_VAPID_KEY;
-      if (!publicVapidKey) {
-        throw new Error('VAPID key is not defined');
-      }
-
-      // Set Firebase config in the window for SW to access
-      window.FIREBASE_CONFIG = app.options;
-
-      const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js', {
-        scope: '/'
-      });
-
-      console.log('Service worker registered successfully:', registration.scope);
-      return registration;
-    } catch (error) {
-      console.error('Service worker registration failed:', error);
-      return null;
-    }
-  } else {
-    console.warn('Service workers are not supported in this browser');
-    return null;
-  }
+  console.log('Firebase messaging service worker registration is disabled');
+  return null;
 };
 
-// Request permission for notifications
+// Request permission for notifications - disabled
 export const requestNotificationPermission = async () => {
-  try {
-    if (!messaging) {
-      console.warn('Messaging is not initialized');
-      return false;
-    }
-
-    const permission = await Notification.requestPermission();
-    console.log('Notification permission status:', permission);
-    return permission === 'granted';
-  } catch (error) {
-    console.error('Failed to request notification permission:', error);
-    return false;
-  }
+  console.log('Notification permission requests are temporarily disabled');
+  return 'default';
 };
 
-// Register FCM token for current user
+// Register FCM token for current user - disabled
 export const registerFCMToken = async (userId: string) => {
-  try {
-    if (!messaging) {
-      console.warn('Messaging is not initialized');
-      return null;
-    }
-
-    const serviceWorkerRegistration = await registerServiceWorker();
-    if (!serviceWorkerRegistration) {
-      throw new Error('Service worker registration failed');
-    }
-
-    const currentToken = await getToken(messaging, {
-      vapidKey: process.env.REACT_APP_FIREBASE_VAPID_KEY,
-      serviceWorkerRegistration
-    });
-
-    if (!currentToken) {
-      console.warn('No token currently available');
-      return null;
-    }
-
-    console.log('FCM Token:', currentToken);
-
-    // Save the token to the user's document
-    const userRef = doc(db, 'users', userId);
-    const userDoc = await getDoc(userRef);
-
-    if (userDoc.exists()) {
-      const userData = userDoc.data();
-      let tokens = userData.fcmTokens || [];
-
-      // Don't add duplicate tokens
-      if (!tokens.includes(currentToken)) {
-        tokens.push(currentToken);
-        await updateDoc(userRef, { fcmTokens: tokens });
-      }
-    }
-
-    return currentToken;
-  } catch (error) {
-    console.error('Error registering FCM token:', error);
-    return null;
-  }
+  console.log('FCM token registration is temporarily disabled');
+  return null;
 };
 
-// Unregister FCM token for current user
+// Unregister FCM token for current user - disabled
 export const unregisterFCMToken = async (userId: string) => {
-  try {
-    if (!messaging) {
-      console.warn('Messaging is not initialized');
-      return false;
-    }
-
-    const currentToken = await getToken(messaging);
-
-    if (!currentToken) {
-      console.warn('No FCM token available to unregister');
-      return false;
-    }
-
-    // Remove token from Firestore
-    const userRef = doc(db, 'users', userId);
-    const userDoc = await getDoc(userRef);
-
-    if (userDoc.exists()) {
-      const userData = userDoc.data();
-      let tokens = userData.fcmTokens || [];
-
-      // Remove the current token
-      tokens = tokens.filter((token: string) => token !== currentToken);
-      await updateDoc(userRef, { fcmTokens: tokens });
-    }
-
-    // Delete the token from FCM
-    await deleteToken(messaging);
-    console.log('FCM token unregistered successfully');
-    return true;
-  } catch (error) {
-    console.error('Error unregistering FCM token:', error);
-    return false;
-  }
+  console.log('FCM token unregistration is temporarily disabled');
+  return true;
 };
 
-// Set up foreground messaging
+// Set up foreground messaging - disabled
 export const setupForegroundNotifications = () => {
-  if (!messaging) {
-    console.warn('Messaging is not initialized');
-    return;
-  }
-
-  onMessage(messaging, (payload) => {
-    console.log('Foreground message received:', payload);
-    const { title, body, icon } = payload.notification || {};
-
-    if (Notification.permission === 'granted' && title) {
-      const notificationOptions = {
-        body: body || '',
-        icon: icon || '/logo192.png',
-        data: payload.data
-      };
-
-      new Notification(title, notificationOptions);
-    }
-  });
+  console.log('Foreground notifications are temporarily disabled');
 };
 
-// User notification preferences
+// User notification preferences - maintains database structure but doesn't enable notifications
 export const updateUserNotificationPreferences = async (
   userId: string,
   preferences: {
@@ -188,16 +46,20 @@ export const updateUserNotificationPreferences = async (
     specialOffers?: boolean;
   }
 ) => {
-  if (!userId) {
-    console.error('User ID is required to update notification preferences');
-    return false;
-  }
-
   try {
+    // Only update the preferences in the database, but don't enable actual notifications
     const userRef = doc(db, 'users', userId);
-    await updateDoc(userRef, {
-      notificationPreferences: preferences
+
+    // Build update object
+    const updates: Record<string, any> = {};
+    Object.entries(preferences).forEach(([key, value]) => {
+      updates[`notificationPreferences.${key}`] = value;
     });
+
+    // Update the user document
+    await updateDoc(userRef, updates);
+
+    console.log('Notification preferences updated in database (notifications disabled)');
     return true;
   } catch (error) {
     console.error('Error updating notification preferences:', error);
@@ -205,15 +67,22 @@ export const updateUserNotificationPreferences = async (
   }
 };
 
+// Get user notification preferences
 export const getUserNotificationPreferences = async (userId: string) => {
-  if (!userId) {
-    console.error('User ID is required to get notification preferences');
-    return null;
-  }
-
   try {
-    const user = await getUser(userId);
-    return user?.notificationPreferences || {
+    const userRef = doc(db, 'users', userId);
+    const userDoc = await getDoc(userRef);
+
+    if (userDoc.exists()) {
+      return userDoc.data().notificationPreferences || {
+        pointsUpdates: true,
+        expiringPoints: true,
+        newRewards: true,
+        specialOffers: true
+      };
+    }
+
+    return {
       pointsUpdates: true,
       expiringPoints: true,
       newRewards: true,
@@ -221,11 +90,16 @@ export const getUserNotificationPreferences = async (userId: string) => {
     };
   } catch (error) {
     console.error('Error getting notification preferences:', error);
-    return null;
+    return {
+      pointsUpdates: true,
+      expiringPoints: true,
+      newRewards: true,
+      specialOffers: true
+    };
   }
 };
 
-// Function to send notification to a specific user
+// Send notification to user - disabled
 export const sendNotificationToUser = async (
   userId: string,
   notification: {
@@ -235,141 +109,46 @@ export const sendNotificationToUser = async (
     data?: Record<string, string>;
   }
 ) => {
-  try {
-    const functions = getFunctions();
-    const sendPushNotification = httpsCallable(functions, 'sendPushNotification');
-
-    await sendPushNotification({
-      userId,
-      notification
-    });
-
-    return { success: true };
-  } catch (error) {
-    console.error('Error sending notification:', error);
-    return { success: false, error };
-  }
+  console.log('Push notifications are temporarily disabled');
+  return false;
 };
 
-// Function to send notification about points update
+// The following functions are maintained for API compatibility but disabled
+
 export const sendPointsUpdateNotification = async (
   userId: string,
   points: number,
   total: number
 ) => {
-  return sendNotificationToUser(userId, {
-    title: 'Points Update',
-    body: `You've earned ${points} points! Your total is now ${total} points.`,
-    data: {
-      type: 'points_update',
-      points: points.toString(),
-      total: total.toString()
-    }
-  });
+  console.log('Points update notifications are temporarily disabled');
+  return false;
 };
 
-// Function to send notification about expiring rewards
 export const sendExpiringRewardsNotification = async (
   userId: string,
   daysToExpiration: number,
   redemptionId: string,
   rewardName: string
 ) => {
-  return sendNotificationToUser(userId, {
-    title: 'Reward Expiring Soon',
-    body: `Your ${rewardName} reward expires in ${daysToExpiration} days. Don't forget to use it!`,
-    data: {
-      type: 'expiring_reward',
-      redemptionId,
-      daysToExpiration: daysToExpiration.toString()
-    }
-  });
+  console.log('Expiring rewards notifications are temporarily disabled');
+  return false;
 };
 
-// Function to send notification about special offers
 export const sendSpecialOfferNotification = async (
   userId: string,
   offerTitle: string,
   offerDescription: string,
   offerId?: string
 ) => {
-  return sendNotificationToUser(userId, {
-    title: 'Special Offer Available',
-    body: `${offerTitle}: ${offerDescription}`,
-    data: {
-      type: 'special_offer',
-      offerId: offerId || ''
-    }
-  });
+  console.log('Special offer notifications are temporarily disabled');
+  return false;
 };
 
-// Function to check and send notifications for expiring rewards
 export const checkAndNotifyExpiringRewards = async () => {
-  try {
-    const now = new Date();
-    const threeDaysFromNow = new Date();
-    threeDaysFromNow.setDate(now.getDate() + 3);
-
-    const sevenDaysFromNow = new Date();
-    sevenDaysFromNow.setDate(now.getDate() + 7);
-
-    // Get redemptions expiring in the next 3-7 days
-    const redemptionsRef = collection(db, 'redemptions');
-    const q = query(
-      redemptionsRef,
-      where('expiresAt', '>', Timestamp.fromDate(threeDaysFromNow)),
-      where('expiresAt', '<', Timestamp.fromDate(sevenDaysFromNow)),
-      where('notifiedExpiration', '==', false)
-    );
-
-    const querySnapshot = await getDocs(q);
-    const notificationPromises: Promise<any>[] = [];
-
-    querySnapshot.forEach(doc => {
-      const redemption = doc.data() as Redemption;
-
-      // Fetch user profile to check notification preferences
-      const userPromise = getDocs(
-        query(collection(db, 'users'), where('uid', '==', redemption.userId))
-      ).then(async userSnapshot => {
-        if (!userSnapshot.empty) {
-          const userProfile = userSnapshot.docs[0].data() as UserProfile;
-
-          // Check if user has enabled expiring rewards notifications
-          if (
-            userProfile.notifications?.isEnabled &&
-            userProfile.notifications.preferences.expiringRewards
-          ) {
-            // Calculate days until expiration
-            const expirationDate = (redemption.expiresAt as unknown as Timestamp).toDate();
-            const daysToExpiration = Math.ceil(
-              (expirationDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)
-            );
-
-            // Send notification
-            return sendExpiringRewardsNotification(
-              redemption.userId,
-              daysToExpiration,
-              doc.id,
-              redemption.rewardName || 'reward'
-            );
-          }
-        }
-        return null;
-      });
-
-      notificationPromises.push(userPromise);
-    });
-
-    await Promise.all(notificationPromises);
-    return { success: true, count: notificationPromises.length };
-  } catch (error) {
-    console.error('Error checking expiring rewards:', error);
-    return { success: false, error };
-  }
+  console.log('Expiring rewards check and notification is temporarily disabled');
+  return false;
 };
 
-// Function to broadcast a notification to all users with a specific preference
 export const broadcastNotificationToUsers = async (
   notificationType: 'pointsUpdates' | 'expiringRewards' | 'specialOffers',
   notification: {
@@ -379,18 +158,6 @@ export const broadcastNotificationToUsers = async (
     data?: Record<string, string>;
   }
 ) => {
-  try {
-    const functions = getFunctions();
-    const broadcastPushNotification = httpsCallable(functions, 'broadcastPushNotification');
-
-    await broadcastPushNotification({
-      notificationType,
-      notification
-    });
-
-    return { success: true };
-  } catch (error) {
-    console.error('Error broadcasting notification:', error);
-    return { success: false, error };
-  }
+  console.log('Broadcast notifications are temporarily disabled');
+  return false;
 };

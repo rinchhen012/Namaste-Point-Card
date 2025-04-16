@@ -13,7 +13,12 @@ type Config = {
   onUpdate?: (registration: ServiceWorkerRegistration) => void;
   onNotificationPermissionChange?: (permission: NotificationPermission) => void;
   enabledNotifications?: boolean;
+  skipWaiting?: boolean;
 };
+
+// Store the last service worker registration time to avoid frequent updates
+const THROTTLE_TIME_MS = 60 * 60 * 1000; // 1 hour between updates
+let lastRegistrationTime = 0;
 
 // Store the update handler so we can use it outside the register function
 let updateCallback: ((registration: ServiceWorkerRegistration) => void) | null = null;
@@ -25,11 +30,8 @@ export function applyUpdate() {
 
     if (registrationWaiting) {
       registrationWaiting.postMessage({ type: 'SKIP_WAITING' });
-      registrationWaiting.addEventListener('statechange', (e) => {
-        if ((e.target as ServiceWorker).state === 'activated') {
-          window.location.reload();
-        }
-      });
+      // We don't automatically reload the page anymore - let the service worker update in the background
+      console.log('Service worker update applied, will activate on next page reload.');
     }
   }
 }
@@ -43,6 +45,15 @@ export function register(config?: Config): void {
       // from what our page is served on. This might happen if a CDN is used.
       return;
     }
+
+    // Check if we've registered a service worker recently to prevent frequent updates
+    const now = Date.now();
+    if (now - lastRegistrationTime < THROTTLE_TIME_MS) {
+      console.log('Skipping service worker registration - throttled');
+      return;
+    }
+
+    lastRegistrationTime = now;
 
     window.addEventListener('load', () => {
       const swUrl = `${import.meta.env.BASE_URL}service-worker.js`;
@@ -87,17 +98,22 @@ export function register(config?: Config): void {
       }
     });
 
-    // Listen for 'controllerchange' event to reload on activation of updated service worker
+    // We're intentionally commenting out the automatic reload on controller change
+    // This prevents the refresh loop issue
+    /*
     navigator.serviceWorker.addEventListener('controllerchange', () => {
       console.log('New service worker activated, reloading for fresh content');
       window.location.reload();
     });
+    */
   }
 }
 
 function registerValidSW(swUrl: string, config?: Config): void {
   navigator.serviceWorker
-    .register(swUrl)
+    .register(swUrl, {
+      updateViaCache: 'none' // Prevent aggressive caching to reduce update issues
+    })
     .then((registration) => {
       // Store the registration globally so we can access it later for updates
       window.serviceWorkerRegistration = registration;
@@ -118,9 +134,23 @@ function registerValidSW(swUrl: string, config?: Config): void {
                   'tabs for this page are closed.'
               );
 
-              // Execute callback
-              if (config && config.onUpdate) {
-                config.onUpdate(registration);
+              // Only execute the update callback if it's been a while since last update
+              if (config && config.onUpdate && !config.skipWaiting) {
+                const lastUpdate = parseInt(localStorage.getItem('serviceWorkerLastUpdate') || '0');
+                const now = Date.now();
+
+                if (now - lastUpdate > THROTTLE_TIME_MS) {
+                  localStorage.setItem('serviceWorkerLastUpdate', now.toString());
+                  config.onUpdate(registration);
+                } else {
+                  console.log('Skipping update notification - throttled');
+                }
+              }
+
+              // Automatically apply the update in the background without notification
+              // if skipWaiting is true
+              if (config && config.skipWaiting === true) {
+                applyUpdate();
               }
             } else {
               // At this point, everything has been precached.

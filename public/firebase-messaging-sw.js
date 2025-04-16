@@ -1,75 +1,44 @@
-// Firebase Messaging Service Worker
+// DISABLED Firebase Messaging Service Worker
+// This is a placeholder service worker file while notifications are disabled
 
-importScripts(
-  "https://www.gstatic.com/firebasejs/9.15.0/firebase-app-compat.js"
-);
-importScripts(
-  "https://www.gstatic.com/firebasejs/9.15.0/firebase-messaging-compat.js"
+console.log(
+  "[firebase-messaging-sw.js] Notifications are temporarily disabled"
 );
 
-// Initialize the Firebase app in the service worker
-firebase.initializeApp({
-  apiKey: self.FIREBASE_CONFIG.apiKey,
-  authDomain: self.FIREBASE_CONFIG.authDomain,
-  projectId: self.FIREBASE_CONFIG.projectId,
-  storageBucket: self.FIREBASE_CONFIG.storageBucket,
-  messagingSenderId: self.FIREBASE_CONFIG.messagingSenderId,
-  appId: self.FIREBASE_CONFIG.appId,
-  measurementId: self.FIREBASE_CONFIG.measurementId,
+// Basic service worker lifecycle events to ensure proper registration
+self.addEventListener("install", (event) => {
+  console.log("[firebase-messaging-sw.js] Service Worker installed");
+  self.skipWaiting(); // Activate immediately
 });
 
-// Retrieve an instance of Firebase Messaging so that it can handle background messages.
-const messaging = firebase.messaging();
-
-// Handle background messages
-messaging.onBackgroundMessage((payload) => {
+self.addEventListener("activate", (event) => {
   console.log(
-    "[firebase-messaging-sw.js] Received background message ",
-    payload
+    "[firebase-messaging-sw.js] Service Worker activated - Notifications disabled"
   );
-
-  const notificationTitle = payload.notification.title || "New Notification";
-  const notificationOptions = {
-    body: payload.notification.body || "",
-    icon: payload.notification.icon || "/logo192.png",
-    data: payload.data,
-  };
-
-  return self.registration.showNotification(
-    notificationTitle,
-    notificationOptions
-  );
+  event.waitUntil(clients.claim()); // Take control of all clients
 });
 
-// When user clicks on the notification
+// Add fetch handler to prevent unhandled promise rejections
+self.addEventListener("fetch", (event) => {
+  // Just let the browser handle the request normally
+});
+
+// Notification click handler that does nothing
 self.addEventListener("notificationclick", (event) => {
-  console.log("[firebase-messaging-sw.js] Notification click: ", event);
-
-  event.notification.close();
-
-  // This looks to see if the current is already open and focuses if it is
-  event.waitUntil(
-    clients
-      .matchAll({ type: "window", includeUncontrolled: true })
-      .then((clientList) => {
-        // If a window tab matching the targeted URL already exists, focus that;
-        // The 'data' object here is what we passed in the 'data' field of the notification options
-        const url =
-          event.notification.data && event.notification.data.url
-            ? event.notification.data.url
-            : "/";
-
-        for (let i = 0; i < clientList.length; i++) {
-          const client = clientList[i];
-          if (client.url === url && "focus" in client) {
-            return client.focus();
-          }
-        }
-
-        // Otherwise, open a new tab to the applicable URL
-        if (clients.openWindow) {
-          return clients.openWindow(url);
-        }
-      })
+  console.log(
+    "[firebase-messaging-sw.js] Notification click received (notifications disabled)"
   );
+
+  if (event.notification) {
+    event.notification.close();
+  }
+});
+
+// Message handler that logs but does nothing
+self.addEventListener("message", (event) => {
+  if (event.data && event.data.type === "FIREBASE_CONFIG") {
+    console.log(
+      "[firebase-messaging-sw.js] Received Firebase config but notifications are disabled"
+    );
+  }
 });

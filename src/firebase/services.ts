@@ -722,10 +722,10 @@ export const redeemReward = async (userId: string, rewardId: string, rewardType:
       throw new Error('Reward not found');
     }
 
-    // Calculate expiration date: 15 minutes for in-store, 30 days for direct orders
+    // Calculate expiration date: 10 minutes for in-store, 30 days for direct orders
     const expirationDate = rewardType === 'direct_order_coupon'
       ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // 30 days
-      : new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
+      : new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
 
     // Create a new redemption
     const newRedemption = {
@@ -815,10 +815,10 @@ export const redeemReward = async (userId: string, rewardId: string, rewardType:
       throw new Error('Not enough points');
     }
 
-    // Calculate expiration date: 15 minutes for in-store, 30 days for direct orders
+    // Calculate expiration date: 10 minutes for in-store, 30 days for direct orders
     const expirationDate = rewardType === 'direct_order_coupon'
       ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // 30 days
-      : new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
+      : new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
 
     // Create redemption record
     const redemptionRef = await addDoc(collection(db, 'redemptions'), {

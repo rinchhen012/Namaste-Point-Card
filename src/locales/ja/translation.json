@@ -161,7 +161,7 @@
     "redeemReward": "クーポンを交換",
     "redeem": "交換する",
     "confirmRedeem": "{{reward}}を{{points}}ポイントで交換しますか？",
-    "redemptionWarning": "⚠️ このクーポンは発行後15分間のみ有効です。誤って発行された場合、再発行はできませんのでご注意ください。",
+    "redemptionWarning": "⚠️ このクーポンは発行後10分間のみ有効です。誤って発行された場合、再発行はできませんのでご注意ください。",
     "showToStaffInstructions": "ご注文の際にこの画面をスタッフにお見せください。カウントダウンはこのクーポンの有効期限を示しています。",
     "validUntil": "{{time}}まで有効",
     "expiresInDays": "{{days}}日で有効期限切れ",

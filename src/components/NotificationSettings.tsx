@@ -51,150 +51,22 @@ const NotificationSettings: React.FC = () => {
     }
   }, [userProfile]);
 
+  // Disabled function - no-op
   const handleRequestPermission = async () => {
-    if (!currentUser) return;
-
-    setIsLoading(true);
-
-    try {
-      const permission = await requestNotificationPermission();
-      setPermissionState(permission);
-
-      if (permission === 'granted') {
-        // Get or create subscription
-        const subscription = await registerPushSubscription();
-
-        if (subscription && userProfile) {
-          // Save to user profile
-          await saveSubscriptionToUserProfile(
-            currentUser.uid,
-            subscription,
-            preferences
-          );
-
-          // Update user profile in context
-          setUserProfile({
-            ...userProfile,
-            notifications: {
-              isEnabled: true,
-              token: JSON.stringify(subscription),
-              preferences: preferences
-            }
-          });
-        }
-      }
-
-      // Hide the prompt regardless of the decision
-      setShowPermissionPrompt(false);
-    } catch (error) {
-      console.error('Error requesting notification permission:', error);
-    } finally {
-      setIsLoading(false);
-    }
+    console.log('Notification permission handling is temporarily disabled');
+    setIsLoading(false);
   };
 
+  // Disabled function - no-op
   const handleToggleAll = async (enabled: boolean) => {
-    if (!currentUser) return;
-
-    setIsLoading(true);
-
-    try {
-      if (enabled) {
-        // Request permission if not already granted
-        if (permissionState !== 'granted') {
-          const permission = await requestNotificationPermission();
-          setPermissionState(permission);
-
-          if (permission !== 'granted') {
-            setIsLoading(false);
-            return;
-          }
-        }
-
-        // Get or create subscription
-        const subscription = await registerPushSubscription();
-
-        if (subscription && userProfile) {
-          // Set all preferences to true
-          const newPreferences = {
-            pointsUpdates: true,
-            expiringRewards: true,
-            specialOffers: true
-          };
-
-          // Save to user profile
-          await saveSubscriptionToUserProfile(
-            currentUser.uid,
-            subscription,
-            newPreferences
-          );
-
-          // Update local state
-          setPreferences(newPreferences);
-          setUserProfile({
-            ...userProfile,
-            notifications: {
-              isEnabled: true,
-              token: JSON.stringify(subscription),
-              preferences: newPreferences
-            }
-          });
-        }
-      } else {
-        // Disable all notifications
-        await disableNotifications(currentUser.uid);
-
-        // Update local state
-        if (userProfile) {
-          setUserProfile({
-            ...userProfile,
-            notifications: {
-              ...userProfile.notifications,
-              isEnabled: false
-            }
-          });
-        }
-      }
-    } catch (error) {
-      console.error('Error toggling notifications:', error);
-    } finally {
-      setIsLoading(false);
-    }
+    console.log('Notification toggle functionality is temporarily disabled');
+    setIsLoading(false);
   };
 
+  // Disabled function - no-op
   const handleTogglePreference = async (key: keyof typeof preferences, value: boolean) => {
-    if (!currentUser || !userProfile) return;
-
-    setIsLoading(true);
-
-    try {
-      // Update preference
-      const newPreferences = {
-        ...preferences,
-        [key]: value
-      };
-
-      // Update in database
-      await updateNotificationPreferences(currentUser.uid, { [key]: value });
-
-      // Update local state
-      setPreferences(newPreferences);
-
-      // Update user profile in context
-      if (userProfile.notifications) {
-        setUserProfile({
-          ...userProfile,
-          notifications: {
-            ...userProfile.notifications,
-            preferences: newPreferences
-          }
-        });
-      }
-    } catch (error) {
-      console.error('Error updating notification preference:', error);
-    } finally {
-      setIsLoading(false);
-    }
+    console.log('Notification preference updates are temporarily disabled');
+    setIsLoading(false);
   };
 
   if (!isSupported) {
@@ -257,12 +129,12 @@ const NotificationSettings: React.FC = () => {
         </div>
       )}
 
-      <div className="flex items-center justify-between mb-4">
-        <div>
-          <p className="font-medium">{t('notifications.enableNotifications')}</p>
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 gap-2">
+        <div className="pr-4">
+          <p className="font-medium">{t('notifications.enable', 'Enable')}</p>
           <p className="text-sm text-gray-500">{t('notifications.enableDescription')}</p>
         </div>
-        <div className="relative inline-block w-12 align-middle select-none">
+        <div className="relative inline-block w-12 align-middle select-none flex-shrink-0">
           <input
             type="checkbox"
             name="toggle-all"

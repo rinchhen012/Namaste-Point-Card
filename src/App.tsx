@@ -5,7 +5,7 @@ import { LanguageProvider } from './contexts/LanguageContext';
 import { AdminAuthProvider } from './contexts/AdminAuthContext';
 import AdminProtectedRoute from './components/AdminProtectedRoute';
 import './locales/i18n';
-import { register as registerServiceWorker, applyUpdate } from './serviceWorkerRegistration';
+import { register as registerServiceWorker } from './serviceWorkerRegistration';
 import { APP_VERSION } from './config/appConfig';
 
 // Split core pages from dashboard and features that require authentication
@@ -44,8 +44,6 @@ const Loading = () => (
 );
 
 function App() {
-  const [newVersionAvailable, setNewVersionAvailable] = useState(false);
-  const [newAppVersion, setNewAppVersion] = useState<string | null>(null);
   const [notificationPermission, setNotificationPermission] = useState<NotificationPermission | null>(null);
 
   useEffect(() => {
@@ -54,92 +52,30 @@ function App() {
       setNotificationPermission(Notification.permission);
     }
 
-    // Register service worker
+    // Register main service worker for PWA
     registerServiceWorker({
-      enabledNotifications: true,
+      // Disable notifications in service worker
+      enabledNotifications: false,
+      skipWaiting: true,
       onSuccess: (registration) => {
-        console.log('ServiceWorker registration successful with scope: ', registration.scope);
+        console.log('Main service worker registration successful with scope: ', registration.scope);
       },
-      onUpdate: (registration) => {
-        // Notify user about update
-        console.log('New content is available; please refresh.');
-        setNewVersionAvailable(true);
-
-        // In a real app, you might be able to get the new version number from the service worker
-        // For now, we'll just indicate that there's a newer version than the current one
-        setNewAppVersion(`${APP_VERSION}+`);
-      },
+      // We're intentionally not using the onUpdate callback to avoid the update banner
       onNotificationPermissionChange: (permission) => {
         console.log('Notification permission changed:', permission);
         setNotificationPermission(permission);
       }
     });
-  }, []);
 
-  // Handler for applying the update when user clicks the refresh button
-  const handleApplyUpdate = () => {
-    applyUpdate();
-  };
+    // NOTE: Firebase messaging service worker registration has been removed
+    // as notifications feature is temporarily disabled
+  }, []);
 
   return (
     <BrowserRouter>
       <AuthProvider>
         <LanguageProvider>
           <AdminAuthProvider>
-            {/* Update notification banner */}
-            {newVersionAvailable && (
-              <div className="fixed bottom-0 inset-x-0 pb-2 sm:pb-5 z-50">
-                <div className="max-w-screen-xl mx-auto px-2 sm:px-6 lg:px-8">
-                  <div className="p-2 rounded-lg bg-primary shadow-lg sm:p-3">
-                    <div className="flex items-center justify-between flex-wrap">
-                      <div className="w-0 flex-1 flex items-center">
-                        <span className="flex p-2 rounded-lg bg-primary-dark">
-                          <svg
-                            className="h-6 w-6 text-white"
-                            xmlns="http://www.w3.org/2000/svg"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M13 10V3L4 14h7v7l9-11h-7z"
-                            />
-                          </svg>
-                        </span>
-                        <p className="ml-3 font-medium text-white truncate">
-                          <span className="md:inline">
-                            {newAppVersion ? `New version ${newAppVersion} is available!` : 'A new version is available!'}
-                          </span>
-                        </p>
-                      </div>
-                      <div className="order-3 mt-2 flex-shrink-0 w-full sm:order-2 sm:mt-0 sm:w-auto">
-                        <button
-                          onClick={handleApplyUpdate}
-                          className="flex items-center justify-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-primary bg-white hover:bg-primary-50"
-                        >
-                          Refresh
-                        </button>
-                      </div>
-                      <div className="order-2 flex-shrink-0 sm:order-3 sm:ml-2">
-                        <button
-                          onClick={() => setNewVersionAvailable(false)}
-                          type="button"
-                          className="-mr-1 flex p-2 rounded-md hover:bg-primary-dark focus:outline-none focus:bg-primary-dark transition ease-in-out duration-150"
-                        >
-                          <svg className="h-6 w-6 text-white" stroke="currentColor" fill="none" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-                          </svg>
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-
             {/* Core routes accessible without auth */}
             <Routes>
               <Route path="/" element={

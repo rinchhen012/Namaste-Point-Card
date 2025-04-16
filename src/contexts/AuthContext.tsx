@@ -1,4 +1,4 @@
-import React, { createContext, useState, useEffect, useContext, ReactNode } from 'react';
+import React, { createContext, useState, useEffect, useContext, ReactNode, useRef } from 'react';
 import {
   User,
   createUserWithEmailAndPassword,
@@ -8,9 +8,12 @@ import {
   updateProfile,
   signInWithPopup,
   GoogleAuthProvider,
-  OAuthProvider
+  OAuthProvider,
+  updatePassword,
+  EmailAuthProvider,
+  reauthenticateWithCredential
 } from 'firebase/auth';
-import { doc, getDoc, setDoc, Timestamp, FirestoreError } from 'firebase/firestore';
+import { doc, getDoc, setDoc, Timestamp, FirestoreError, onSnapshot, Unsubscribe } from 'firebase/firestore';
 import { auth, db } from '../firebase/config';
 import { UserProfile } from '../types';
 
@@ -23,6 +26,7 @@ interface AuthContextType {
   logout: () => Promise<void>;
   googleSignIn: () => Promise<User>;
   appleSignIn: () => Promise<User>;
+  updateUserPasswordInternal: (currentPass: string, newPass: string) => Promise<void>;
   loading: boolean;
   authError: string | null;
 }
@@ -46,108 +50,88 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [authError, setAuthError] = useState<string | null>(null);
+  const profileListenerUnsubscribe = useRef<Unsubscribe | null>(null);
 
-  // Function to fetch user profile from Firestore with retry
-  const fetchUserProfile = async (user: User, retryCount = 0): Promise<void> => {
-    const MAX_RETRIES = 3;
-    try {
-      setAuthError(null);
-      const userDocRef = doc(db, 'users', user.uid);
-      const userDoc = await getDoc(userDocRef);
-
-      if (userDoc.exists()) {
-        setUserProfile(userDoc.data() as UserProfile);
-      } else {
-        console.log('No profile document found for this user');
-        // If no profile exists but we have a valid user, create a default profile
-        if (user.email) {
-          const defaultProfile: UserProfile = {
-            uid: user.uid,
-            email: user.email,
-            displayName: user.displayName || 'User',
-            points: 0,
-            createdAt: Timestamp.now()
-          };
-
-          try {
-            await setDoc(userDocRef, defaultProfile);
-            setUserProfile(defaultProfile);
-          } catch (error) {
-            console.error('Error creating default profile:', error);
-          }
-        }
-      }
-    } catch (error) {
-      console.error('Error fetching user profile:', error);
-      // Handle specific Firestore errors
-      if (error instanceof FirestoreError) {
-        if (['unavailable', 'cancelled', 'unknown', 'deadline-exceeded'].includes(error.code) && retryCount < MAX_RETRIES) {
-          // Retry with exponential backoff for connection-related errors
-          const delay = Math.pow(2, retryCount) * 1000;
-          console.log(`Retrying profile fetch in ${delay}ms (attempt ${retryCount + 1}/${MAX_RETRIES})`);
-          setTimeout(() => {
-            fetchUserProfile(user, retryCount + 1);
-          }, delay);
-          return;
-        }
-
-        // Set a user-friendly error message
-        if (error.code === 'permission-denied') {
-          setAuthError('Access denied. You may not have permission to access your profile.');
-        } else {
-          setAuthError('Error connecting to the server. Please try again later.');
-        }
-      }
-
-      // If we've exhausted retries or it's not a retriable error,
-      // create an in-memory profile from the auth user to allow basic functionality
-      if (user.email) {
-        const fallbackProfile: UserProfile = {
-          uid: user.uid,
-          email: user.email,
-          displayName: user.displayName || 'User',
-          points: 0,
-          createdAt: Timestamp.now()
-        };
-
-        // Use this as a temporary profile until connectivity is restored
-        console.warn('Using fallback profile due to connectivity issues');
-        setUserProfile(fallbackProfile);
-      }
-    }
-  };
-
-  // Monitor authentication state
   useEffect(() => {
-    let unsubscribed = false;
     setLoading(true);
 
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      if (unsubscribed) return;
+    const unsubscribeAuth = onAuthStateChanged(auth, async (user) => {
+      if (profileListenerUnsubscribe.current) {
+        profileListenerUnsubscribe.current();
+        profileListenerUnsubscribe.current = null;
+      }
 
       setCurrentUser(user);
 
       if (user) {
-        await fetchUserProfile(user);
+        const userDocRef = doc(db, 'users', user.uid);
+
+        profileListenerUnsubscribe.current = onSnapshot(userDocRef,
+          (docSnap) => {
+            if (docSnap.exists()) {
+              const profileData = docSnap.data() as UserProfile;
+              setUserProfile(profileData);
+              setAuthError(null);
+              console.log('[AuthContext] User profile updated via listener.');
+            } else {
+              console.warn(`Profile not found for ${user.uid}, attempting to create default.`);
+              if (user.email) {
+                const defaultProfile: UserProfile = {
+                  uid: user.uid,
+                  email: user.email,
+                  displayName: user.displayName || 'User',
+                  points: 0,
+                  createdAt: Timestamp.now()
+                };
+                setDoc(userDocRef, defaultProfile)
+                  .then(() => {
+                    console.log('[AuthContext] Default profile created.');
+                    setUserProfile(defaultProfile);
+                    setAuthError(null);
+                  })
+                  .catch((error) => {
+                    console.error('[AuthContext] Error creating default profile:', error);
+                    setUserProfile(null);
+                    setAuthError('Failed to create user profile.');
+                  });
+              } else {
+                setUserProfile(null);
+                console.error('[AuthContext] Cannot create default profile: User has no email.');
+                setAuthError('User profile missing and cannot be created.');
+              }
+            }
+            if (loading) setLoading(false);
+          },
+          (error) => {
+            console.error('[AuthContext] Error listening to user profile:', error);
+            setAuthError('Failed to load profile data in real-time.');
+            setUserProfile(null);
+            setLoading(false);
+          }
+        );
+
       } else {
         setUserProfile(null);
         setAuthError(null);
+        setLoading(false);
       }
-
-      setLoading(false);
     }, (error) => {
-      console.error('Auth state change error:', error);
+      console.error('[AuthContext] Auth state change error:', error);
       setLoading(false);
       setAuthError('Authentication error. Please try again later.');
+      if (profileListenerUnsubscribe.current) {
+        profileListenerUnsubscribe.current();
+      }
     });
 
     return () => {
-      unsubscribed = true;
-      unsubscribe();
+      unsubscribeAuth();
+      if (profileListenerUnsubscribe.current) {
+        profileListenerUnsubscribe.current();
+      }
     };
   }, []);
 
-  // Login with email and password
   const login = async (email: string, password: string): Promise<User> => {
     try {
       const result = await signInWithEmailAndPassword(auth, email, password);
@@ -158,28 +142,23 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  // Register new user
   const register = async (email: string, password: string): Promise<User> => {
     try {
       const result = await createUserWithEmailAndPassword(auth, email, password);
       const user = result.user;
 
-      // Set default display name to "User" for Firebase Auth profile
       await updateProfile(user, { displayName: "User" });
 
-      // Create user profile in Firestore with default name
       const userProfileData: UserProfile = {
         uid: user.uid,
         email: user.email || '',
-        displayName: "User", // Default display name
+        displayName: "User",
         points: 0,
         createdAt: Timestamp.now(),
         phoneNumber: '',
-        // No need to set lastQRCheckIn here, will be set on first check-in
       };
 
       await setDoc(doc(db, 'users', user.uid), userProfileData);
-      setUserProfile(userProfileData); // Update context
 
       return user;
     } catch (error) {
@@ -188,7 +167,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  // Logout
   const logout = async (): Promise<void> => {
     try {
       await signOut(auth);
@@ -198,14 +176,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  // Google Sign-in
   const googleSignIn = async (): Promise<User> => {
     try {
       const provider = new GoogleAuthProvider();
       const result = await signInWithPopup(auth, provider);
       const user = result.user;
 
-      // Check if user profile exists, create one if not
       const userDocRef = doc(db, 'users', user.uid);
       const userDoc = await getDoc(userDocRef);
 
@@ -213,15 +189,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         const newUserProfile: UserProfile = {
           uid: user.uid,
           email: user.email || '',
-          displayName: user.displayName || '',
+          displayName: user.displayName || 'User',
           points: 0,
           createdAt: Timestamp.now(),
           phoneNumber: user.phoneNumber || '',
-          // No need to set lastQRCheckIn here, will be set on first check-in
         };
 
         await setDoc(userDocRef, newUserProfile);
-        setUserProfile(newUserProfile);
       }
 
       return user;
@@ -231,7 +205,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  // Apple Sign-in
   const appleSignIn = async (): Promise<User> => {
     try {
       const provider = new OAuthProvider('apple.com');
@@ -241,7 +214,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const result = await signInWithPopup(auth, provider);
       const user = result.user;
 
-      // Check if user profile exists, create one if not
       const userDocRef = doc(db, 'users', user.uid);
       const userDoc = await getDoc(userDocRef);
 
@@ -249,21 +221,41 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         const newUserProfile: UserProfile = {
           uid: user.uid,
           email: user.email || '',
-          displayName: user.displayName || '',
+          displayName: user.displayName || 'User',
           points: 0,
           createdAt: Timestamp.now(),
           phoneNumber: user.phoneNumber || '',
-          // No need to set lastQRCheckIn here, will be set on first check-in
         };
 
         await setDoc(userDocRef, newUserProfile);
-        setUserProfile(newUserProfile);
       }
 
       return user;
     } catch (error) {
       console.error('Apple sign-in error:', error);
       throw error;
+    }
+  };
+
+  const updateUserPasswordInternal = async (currentPass: string, newPass: string): Promise<void> => {
+    if (!currentUser || !currentUser.email) {
+      throw new Error('User not logged in or email missing.');
+    }
+
+    try {
+      const credential = EmailAuthProvider.credential(currentUser.email, currentPass);
+      await reauthenticateWithCredential(currentUser, credential);
+
+      await updatePassword(currentUser, newPass);
+      console.log('[AuthContext] Password updated successfully.');
+    } catch (error) {
+      console.error('[AuthContext] Error updating password:', error);
+      if (error.code === 'auth/wrong-password') {
+        throw new Error('Incorrect current password.');
+      } else if (error.code === 'auth/too-many-requests') {
+        throw new Error('Too many attempts. Please try again later.');
+      }
+      throw new Error('Failed to update password.');
     }
   };
 
@@ -276,13 +268,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     logout,
     googleSignIn,
     appleSignIn,
+    updateUserPasswordInternal,
     loading,
     authError
   };
 
   return (
     <AuthContext.Provider value={value}>
-      {!loading && children}
+      {children}
     </AuthContext.Provider>
   );
 };
