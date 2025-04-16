@@ -670,7 +670,8 @@ export async function getAvailableRewards(): Promise<Reward[]> {
         pointsCost: data.pointsCost || data.points || 0,
         type: data.type || 'in_store_item',
         isActive: data.isActive || data.active || false,
-        imageUrl: data.imageUrl || ''
+        imageUrl: data.imageUrl || '',
+        couponType: data.couponType || 'in_store'
       } as Reward);
     });
 
