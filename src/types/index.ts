@@ -34,6 +34,7 @@ export interface Coupon {
   descriptionJa: string;
   pointsCost: number;
   isActive: boolean;
+  couponType: 'in_store' | 'online_delivery';
   imageUrl?: string;
 }
 
@@ -53,6 +54,7 @@ export interface Redemption {
   expiresAt: Timestamp;
   used: boolean;
   imageUrl?: string;
+  code?: string;
 }
 
 export interface OnlineOrderCode {

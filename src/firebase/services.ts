@@ -796,6 +796,7 @@ export const redeemReward = async (userId: string, rewardId: string, rewardType:
       },
       pointsCost: rewardData.pointsCost || rewardData.points || 0,
       type: rewardData.type || 'in_store_item',
+      couponType: rewardData.couponType || 'in_store',
       isActive: rewardData.isActive || rewardData.active || false,
       imageUrl: rewardData.imageUrl || ''
     };
@@ -815,10 +816,18 @@ export const redeemReward = async (userId: string, rewardId: string, rewardType:
       throw new Error('Not enough points');
     }
 
-    // Calculate expiration date: 10 minutes for in-store, 30 days for direct orders
-    const expirationDate = rewardType === 'direct_order_coupon'
-      ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // 30 days
-      : new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+    // Calculate expiration date based on coupon type
+    let expirationDate;
+    if (reward.couponType === 'online_delivery') {
+      expirationDate = new Date(Date.now() + 12 * 60 * 60 * 1000); // 12 hours for online delivery
+    } else {
+      expirationDate = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes for in-store
+    }
+
+    // Generate a unique code for online delivery coupons
+    const uniqueCode = reward.couponType === 'online_delivery'
+      ? `NAMASTE-${Math.random().toString(36).substring(2, 8).toUpperCase()}`
+      : undefined;
 
     // Create redemption record
     const redemptionRef = await addDoc(collection(db, 'redemptions'), {
@@ -832,7 +841,9 @@ export const redeemReward = async (userId: string, rewardId: string, rewardType:
       createdAt: Timestamp.now(),
       expiresAt: Timestamp.fromDate(expirationDate),
       used: false,
-      imageUrl: reward.imageUrl
+      imageUrl: reward.imageUrl,
+      code: uniqueCode,
+      couponType: reward.couponType
     });
 
     // Deduct points from user
@@ -861,7 +872,7 @@ export const redeemReward = async (userId: string, rewardId: string, rewardType:
       rewardDescription: reward.description.en,
       pointsCost: reward.pointsCost,
       createdAt: new Date(),
-      code: `COUPON-${Math.random().toString(36).substring(2, 8).toUpperCase()}`,
+      code: uniqueCode,
       imageUrl: reward.imageUrl
     };
   } catch (error) {

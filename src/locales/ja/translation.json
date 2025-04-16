@@ -186,7 +186,12 @@
     "redemptionComplete": "交換完了！",
     "errorProcessingRedemption": "交換処理中にエラーが発生しました",
     "redeemSuccess": "交換完了",
-    "usedSuccess": "クーポン使用済み"
+    "usedSuccess": "クーポン使用済み",
+    "deliveryCodeTitle": "デリバリーコード",
+    "howToUseDeliveryCode": "このコードの使い方",
+    "deliveryStep1": "出前館またはUber Eatsで注文する",
+    "deliveryStep2": "注文の備考欄にこのコードを入力する",
+    "deliveryStep3": "スタッフが注文準備時にコードを確認します"
   },
   "profile": {
     "profile": "プロフィール",

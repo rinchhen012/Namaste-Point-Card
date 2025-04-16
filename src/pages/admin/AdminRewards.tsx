@@ -14,6 +14,7 @@ interface RewardFormData {
   imageFile: File | null;
   isActive: boolean;
   imageUrl?: string;
+  couponType: 'in_store' | 'online_delivery';
 }
 
 const AdminRewards: React.FC = () => {
@@ -34,7 +35,8 @@ const AdminRewards: React.FC = () => {
     descriptionJa: '',
     pointsCost: 10,
     imageFile: null,
-    isActive: true
+    isActive: true,
+    couponType: 'in_store'
   });
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -85,7 +87,8 @@ const AdminRewards: React.FC = () => {
       descriptionJa: '',
       pointsCost: 10,
       imageFile: null,
-      isActive: true
+      isActive: true,
+      couponType: 'in_store'
     });
   };
 
@@ -105,7 +108,8 @@ const AdminRewards: React.FC = () => {
       pointsCost: reward.pointsCost,
       imageFile: null,
       isActive: reward.isActive,
-      imageUrl: reward.imageUrl
+      imageUrl: reward.imageUrl,
+      couponType: reward.couponType || 'in_store'
     });
   };
 
@@ -442,9 +446,46 @@ const AdminRewards: React.FC = () => {
                   value={formData.pointsCost}
                   onChange={handleInputChange}
                   min="1"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-orange-500 focus:border-orange-500"
+                  max="100"
                   required
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary"
                 />
+              </div>
+
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Coupon Type
+                </label>
+                <div className="flex space-x-4">
+                  <div className="flex items-center">
+                    <input
+                      type="radio"
+                      id="in_store"
+                      name="couponType"
+                      value="in_store"
+                      checked={formData.couponType === 'in_store'}
+                      onChange={(e) => setFormData({...formData, couponType: 'in_store'})}
+                      className="h-4 w-4 text-primary focus:ring-primary border-gray-300"
+                    />
+                    <label htmlFor="in_store" className="ml-2 block text-sm text-gray-700">
+                      In-store (10 min)
+                    </label>
+                  </div>
+                  <div className="flex items-center">
+                    <input
+                      type="radio"
+                      id="online_delivery"
+                      name="couponType"
+                      value="online_delivery"
+                      checked={formData.couponType === 'online_delivery'}
+                      onChange={(e) => setFormData({...formData, couponType: 'online_delivery'})}
+                      className="h-4 w-4 text-primary focus:ring-primary border-gray-300"
+                    />
+                    <label htmlFor="online_delivery" className="ml-2 block text-sm text-gray-700">
+                      Online Delivery (12 hrs)
+                    </label>
+                  </div>
+                </div>
               </div>
 
               <div className="mb-4">
@@ -472,10 +513,10 @@ const AdminRewards: React.FC = () => {
                   name="isActive"
                   checked={formData.isActive}
                   onChange={handleCheckboxChange}
-                  className="h-4 w-4 text-orange-600 focus:ring-orange-500 border-gray-300 rounded"
+                  className="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded"
                 />
                 <label htmlFor="isActive" className="ml-2 block text-sm text-gray-700">
-                  Active (immediately available to users)
+                  Active
                 </label>
               </div>
 

@@ -328,6 +328,19 @@ const RedemptionPage: React.FC = () => {
     const isExpired = expiryDate ? expiryDate.getTime() <= Date.now() : true;
     const isUsed = 'used' in redemption && redemption.used;
 
+    // Determine if this is an online delivery coupon
+    const isOnlineDelivery = (
+      ('couponType' in redemption && redemption.couponType === 'online_delivery') ||
+      (reward && reward.couponType === 'online_delivery')
+    );
+
+    // Format expiration time based on coupon type
+    const formattedExpirationTime = expiryDate
+      ? isOnlineDelivery
+        ? formatDateTime(expiryDate, userProfile.language) // Full date and time for online delivery
+        : countdown // Countdown for in-store
+      : '-';
+
     return (
       <Layout
         title={t('rewards.redemption')}
@@ -358,21 +371,67 @@ const RedemptionPage: React.FC = () => {
               {redemption.rewardDescription}
             </p>
 
-            <div className="bg-blue-50 border border-blue-200 rounded-md p-4 mb-6 text-center">
-              <p className="text-sm text-blue-700 font-medium mb-2">
-                {t('rewards.showToStaffInstructions')}
-              </p>
-              {expiryDate && !isExpired && !isUsed ? (
-                <div className="flex justify-center items-baseline">
-                  <span className="text-2xl font-bold text-primary mr-1">{countdown}</span>
-                  <span className="text-xs text-gray-600">{t('rewards.validUntilTime')}</span>
+            {/* Different UI based on coupon type */}
+            {isOnlineDelivery ? (
+              // Online Delivery Coupon UI
+              <div className="mb-6">
+                {/* Display redemption code */}
+                <div className="bg-blue-50 border border-blue-200 rounded-md p-4 mb-4 text-center">
+                  <p className="text-sm text-blue-700 font-medium mb-2">
+                    {t('rewards.deliveryCodeTitle')}
+                  </p>
+                  <div className="bg-white p-3 rounded-md border border-blue-300 mb-2">
+                    <p className="text-2xl font-bold tracking-wide text-gray-800 select-all">
+                      {'code' in redemption ? redemption.code : ''}
+                    </p>
+                  </div>
+                  <p className="text-xs text-blue-700">
+                    {t('rewards.validUntil')}: {formattedExpirationTime}
+                  </p>
                 </div>
-              ) : isUsed ? (
-                <p className="text-lg font-bold text-gray-500">{t('rewards.alreadyUsed')}</p>
-              ) : (
-                <p className="text-lg font-bold text-red-600">{t('rewards.expired')}</p>
-              )}
-            </div>
+
+                {/* Instructions for online delivery */}
+                <div className="bg-yellow-50 border border-yellow-200 rounded-md p-4 mb-4">
+                  <p className="text-sm text-yellow-800 font-medium mb-2">
+                    {t('rewards.howToUseDeliveryCode')}
+                  </p>
+                  <ol className="list-decimal pl-5 text-sm text-yellow-700 space-y-1">
+                    <li>{t('rewards.deliveryStep1')}</li>
+                    <li>{t('rewards.deliveryStep2')}</li>
+                    <li>{t('rewards.deliveryStep3')}</li>
+                  </ol>
+                </div>
+
+                {/* Status info */}
+                {isUsed && (
+                  <div className="bg-gray-100 p-3 rounded-md text-center mb-4">
+                    <p className="text-gray-600">{t('rewards.alreadyUsed')}</p>
+                  </div>
+                )}
+                {isExpired && !isUsed && (
+                  <div className="bg-red-100 p-3 rounded-md text-center mb-4">
+                    <p className="text-red-600">{t('rewards.expired')}</p>
+                  </div>
+                )}
+              </div>
+            ) : (
+              // In-store Coupon UI - existing implementation
+              <div className="bg-blue-50 border border-blue-200 rounded-md p-4 mb-6 text-center">
+                <p className="text-sm text-blue-700 font-medium mb-2">
+                  {t('rewards.showToStaffInstructions')}
+                </p>
+                {expiryDate && !isExpired && !isUsed ? (
+                  <div className="flex justify-center items-baseline">
+                    <span className="text-2xl font-bold text-primary mr-1">{countdown}</span>
+                    <span className="text-xs text-gray-600">{t('rewards.validUntilTime')}</span>
+                  </div>
+                ) : isUsed ? (
+                  <p className="text-lg font-bold text-gray-500">{t('rewards.alreadyUsed')}</p>
+                ) : (
+                  <p className="text-lg font-bold text-red-600">{t('rewards.expired')}</p>
+                )}
+              </div>
+            )}
 
             <div className="grid grid-cols-[auto,1fr] gap-x-4 gap-y-2 mb-6 text-sm min-w-0">
               <span className="text-gray-600 whitespace-nowrap">{t('rewards.redeemed')}:</span>
