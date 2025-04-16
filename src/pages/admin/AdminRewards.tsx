@@ -319,6 +319,19 @@ const AdminRewards: React.FC = () => {
                 <p className="text-sm text-gray-600 mb-1">{reward.nameJa}</p>
                 <p className="text-sm text-gray-700 mb-2 line-clamp-3">{reward.description}</p>
                 <p className="text-sm text-gray-500 line-clamp-2">{reward.descriptionJa}</p>
+                
+                {/* Coupon type badge */}
+                <div className="mt-3">
+                  <span className={`inline-block text-xs px-2 py-1 rounded-full ${
+                    reward.couponType === 'online_delivery' 
+                      ? 'bg-blue-100 text-blue-800' 
+                      : 'bg-amber-100 text-amber-800'
+                  }`}>
+                    {reward.couponType === 'online_delivery' 
+                      ? 'Online Delivery (12 hrs)' 
+                      : 'In-store (10 min)'}
+                  </span>
+                </div>
               </div>
               <div className="px-4 py-3 bg-gray-50 border-t border-gray-200 flex justify-between items-center mt-auto">
                 <span className="font-bold text-orange-600">{reward.pointsCost} pts</span>
@@ -644,6 +657,42 @@ const AdminRewards: React.FC = () => {
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-orange-500 focus:border-orange-500"
                   required
                 />
+              </div>
+
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Coupon Type
+                </label>
+                <div className="flex space-x-4">
+                  <div className="flex items-center">
+                    <input
+                      type="radio"
+                      id="edit-in_store"
+                      name="couponType"
+                      value="in_store"
+                      checked={formData.couponType === 'in_store'}
+                      onChange={(e) => setFormData({...formData, couponType: 'in_store'})}
+                      className="h-4 w-4 text-primary focus:ring-primary border-gray-300"
+                    />
+                    <label htmlFor="edit-in_store" className="ml-2 block text-sm text-gray-700">
+                      In-store (10 min)
+                    </label>
+                  </div>
+                  <div className="flex items-center">
+                    <input
+                      type="radio"
+                      id="edit-online_delivery"
+                      name="couponType"
+                      value="online_delivery"
+                      checked={formData.couponType === 'online_delivery'}
+                      onChange={(e) => setFormData({...formData, couponType: 'online_delivery'})}
+                      className="h-4 w-4 text-primary focus:ring-primary border-gray-300"
+                    />
+                    <label htmlFor="edit-online_delivery" className="ml-2 block text-sm text-gray-700">
+                      Online Delivery (12 hrs)
+                    </label>
+                  </div>
+                </div>
               </div>
 
               <div className="mb-4">

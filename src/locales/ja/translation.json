@@ -191,7 +191,9 @@
     "howToUseDeliveryCode": "このコードの使い方",
     "deliveryStep1": "出前館またはUber Eatsで注文する",
     "deliveryStep2": "注文の備考欄にこのコードを入力する",
-    "deliveryStep3": "スタッフが注文準備時にコードを確認します"
+    "deliveryStep3": "スタッフが注文準備時にコードを確認します",
+    "inStoreBadge": "店内利用(10分)",
+    "onlineDeliveryBadge": "デリバリー(12時間)"
   },
   "profile": {
     "profile": "プロフィール",

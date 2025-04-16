@@ -188,7 +188,9 @@
     "howToUseDeliveryCode": "How to Use This Code",
     "deliveryStep1": "Place an order via Demaecan or Ubereats",
     "deliveryStep2": "Enter this code in the order notes/remarks field",
-    "deliveryStep3": "Staff will verify the code when preparing your order"
+    "deliveryStep3": "Staff will verify the code when preparing your order",
+    "inStoreBadge": "In-store (10 min)",
+    "onlineDeliveryBadge": "Online Delivery (12 hrs)"
   },
   "profile": {
     "myProfile": "My Profile",

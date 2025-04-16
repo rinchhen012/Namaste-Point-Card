@@ -232,6 +232,19 @@ const CouponsPage: React.FC = () => {
                     ? coupon.description[userProfile.language]
                     : ''}
               </p>
+              
+              {/* Coupon type badge */}
+              <div className="mt-2 flex">
+                <span className={`text-xs px-2 py-0.5 rounded-full ${
+                  coupon.couponType === 'online_delivery' 
+                    ? 'bg-blue-100 text-blue-800' 
+                    : 'bg-amber-100 text-amber-800'
+                }`}>
+                  {coupon.couponType === 'online_delivery' 
+                    ? t('rewards.onlineDeliveryBadge') 
+                    : t('rewards.inStoreBadge')}
+                </span>
+              </div>
             </div>
 
             <div className="flex justify-between items-center mt-auto pt-3 border-t border-gray-100 gap-4 flex-shrink-0">
