@@ -521,7 +521,8 @@ export async function getAllRewardsList(): Promise<Reward[]> {
           descriptionJa: '次回の注文でナンが無料',
           pointsCost: 10,
           isActive: true,
-          imageUrl: 'https://example.com/naan.jpg'
+          imageUrl: 'https://example.com/naan.jpg',
+          couponType: 'in_store'
         },
         {
           id: 'reward2',
@@ -531,7 +532,8 @@ export async function getAllRewardsList(): Promise<Reward[]> {
           descriptionJa: '次回の注文で10%割引',
           pointsCost: 20,
           isActive: true,
-          imageUrl: 'https://example.com/discount.jpg'
+          imageUrl: 'https://example.com/discount.jpg',
+          couponType: 'in_store'
         }
       ];
     }
@@ -551,7 +553,8 @@ export async function getAllRewardsList(): Promise<Reward[]> {
         descriptionJa: data.descriptionJa || '',
         pointsCost: data.pointsCost || data.points || 0,
         isActive: data.isActive || data.active || false,
-        imageUrl: data.imageUrl || ''
+        imageUrl: data.imageUrl || '',
+        couponType: data.couponType || 'in_store'
       });
     });
 
