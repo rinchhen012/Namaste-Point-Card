@@ -17,12 +17,6 @@ const HomePage: React.FC = () => {
   const prevPointsRef = useRef<number | null>(null);
   const [minPointsNeeded, setMinPointsNeeded] = useState<number | null>(null);
 
-  useEffect(() => {
-    if (!currentUser) {
-      navigate('/login');
-    }
-  }, [currentUser, navigate]);
-
   // Fetch the available rewards to determine minimum points needed
   useEffect(() => {
     const fetchMinPointsNeeded = async () => {
@@ -75,7 +69,8 @@ const HomePage: React.FC = () => {
     }
   }, [userProfile?.points]);
 
-  if (!currentUser || !userProfile) {
+  // We know currentUser exists because of ProtectedRoute
+  if (!userProfile) {
     return null;
   }
 

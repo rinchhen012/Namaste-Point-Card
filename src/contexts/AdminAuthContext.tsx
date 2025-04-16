@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged, User } from 'firebase/auth';
+import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged, User, setPersistence, browserLocalPersistence } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../firebase/config';
 
@@ -96,42 +96,16 @@ export const AdminAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   // Admin login function using Firebase
   const adminLogin = async (email: string, password: string): Promise<boolean> => {
     try {
-      // For development environments with mock auth
-      if (import.meta.env.DEV && import.meta.env.VITE_USE_MOCK_AUTH === 'true') {
-        if (email === 'admin' && password === 'namaste2024') {
-          const mockUser = {
-            uid: 'admin-mock-uid',
-            email: 'admin@example.com',
-            displayName: 'Mock Admin',
-            emailVerified: true,
-            getIdToken: () => Promise.resolve('mock-token'),
-            reload: () => Promise.resolve(),
-            delete: () => Promise.resolve(),
-            toJSON: () => ({})
-          } as unknown as User;
-
-          setIsAdminAuthenticated(true);
-          setCurrentAdminUser(mockUser);
-          return true;
-        } else {
-          setIsAdminAuthenticated(false);
-          setCurrentAdminUser(null);
-          return false;
-        }
-      }
-
-      // Regular Firebase auth for production
-      setAdminAuthLoading(true);
-      const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      await checkIsAdmin(userCredential.user);
+      // Set persistence to LOCAL to maintain admin login state across page reloads
+      await setPersistence(auth, browserLocalPersistence);
+      const result = await signInWithEmailAndPassword(auth, email, password);
+      await checkIsAdmin(result.user);
       return isAdminAuthenticated;
     } catch (error) {
-      console.error('Login error:', error);
+      console.error('Admin login error:', error);
       setIsAdminAuthenticated(false);
       setCurrentAdminUser(null);
       return false;
-    } finally {
-      setAdminAuthLoading(false);
     }
   };
 

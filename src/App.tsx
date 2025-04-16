@@ -4,6 +4,7 @@ import { AuthProvider } from './contexts/AuthContext';
 import { LanguageProvider } from './contexts/LanguageContext';
 import { AdminAuthProvider } from './contexts/AdminAuthContext';
 import AdminProtectedRoute from './components/AdminProtectedRoute';
+import ProtectedRoute from './components/ProtectedRoute';
 import './locales/i18n';
 import { register as registerServiceWorker } from './serviceWorkerRegistration';
 import { APP_VERSION } from './config/appConfig';
@@ -80,7 +81,9 @@ function App() {
             <Routes>
               <Route path="/" element={
                 <Suspense fallback={<Loading />}>
-                  <HomePage />
+                  <ProtectedRoute>
+                    <HomePage />
+                  </ProtectedRoute>
                 </Suspense>
               } />
               <Route path="/login" element={
@@ -102,33 +105,45 @@ function App() {
               {/* Feature routes that need authentication */}
               <Route path="/scan" element={
                 <Suspense fallback={<Loading />}>
-                  <ScanPage />
+                  <ProtectedRoute>
+                    <ScanPage />
+                  </ProtectedRoute>
                 </Suspense>
               } />
               <Route path="/in-store" element={
                 <Suspense fallback={<Loading />}>
-                  <InStorePage />
+                  <ProtectedRoute>
+                    <InStorePage />
+                  </ProtectedRoute>
                 </Suspense>
               } />
               <Route path="/coupons" element={
                 <Suspense fallback={<Loading />}>
-                  <CouponsPage />
+                  <ProtectedRoute>
+                    <CouponsPage />
+                  </ProtectedRoute>
                 </Suspense>
               } />
               <Route path="/rewards" element={<Navigate to="/coupons" replace />} />
               <Route path="/redemption/:id" element={
                 <Suspense fallback={<Loading />}>
-                  <RedemptionPage />
+                  <ProtectedRoute>
+                    <RedemptionPage />
+                  </ProtectedRoute>
                 </Suspense>
               } />
               <Route path="/redemption-history" element={
                 <Suspense fallback={<Loading />}>
-                  <RedemptionHistoryPage />
+                  <ProtectedRoute>
+                    <RedemptionHistoryPage />
+                  </ProtectedRoute>
                 </Suspense>
               } />
               <Route path="/profile" element={
                 <Suspense fallback={<Loading />}>
-                  <ProfilePage />
+                  <ProtectedRoute>
+                    <ProfilePage />
+                  </ProtectedRoute>
                 </Suspense>
               } />
 

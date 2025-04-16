@@ -59,11 +59,6 @@ const CouponsPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'active' | 'available'>('active');
 
   useEffect(() => {
-    if (!currentUser) {
-      navigate('/login');
-      return;
-    }
-
     const fetchData = async () => {
       setLoading(true);
       setError(null);
@@ -71,7 +66,7 @@ const CouponsPage: React.FC = () => {
       try {
         const couponsData = await getAvailableRewards();
         setCoupons(couponsData as Coupon[]);
-        const redemptionsData = await getUserRedemptions(currentUser.uid);
+        const redemptionsData = await getUserRedemptions(currentUser?.uid || '');
         setActiveRedemptions(redemptionsData as Redemption[]);
 
         // If there are no active redemptions, switch to available tab automatically
@@ -91,8 +86,10 @@ const CouponsPage: React.FC = () => {
       }
     };
 
-    fetchData();
-  }, [currentUser, navigate, t]);
+    if (currentUser) {
+      fetchData();
+    }
+  }, [currentUser, t]);
 
   const canRedeemCoupon = (pointsCost: number) => {
     return userProfile && userProfile.points >= pointsCost;
@@ -106,7 +103,7 @@ const CouponsPage: React.FC = () => {
     navigate(`/redemption/${redemption.id}`, { state: { existingRedemption: redemption } });
   };
 
-  if (!currentUser || !userProfile) {
+  if (!userProfile) {
     return null;
   }
 

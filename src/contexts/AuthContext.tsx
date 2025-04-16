@@ -11,7 +11,9 @@ import {
   OAuthProvider,
   updatePassword,
   EmailAuthProvider,
-  reauthenticateWithCredential
+  reauthenticateWithCredential,
+  setPersistence,
+  browserLocalPersistence
 } from 'firebase/auth';
 import { doc, getDoc, setDoc, Timestamp, FirestoreError, onSnapshot, Unsubscribe } from 'firebase/firestore';
 import { auth, db } from '../firebase/config';
@@ -134,6 +136,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const login = async (email: string, password: string): Promise<User> => {
     try {
+      await setPersistence(auth, browserLocalPersistence);
       const result = await signInWithEmailAndPassword(auth, email, password);
       return result.user;
     } catch (error) {
@@ -144,6 +147,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const register = async (email: string, password: string): Promise<User> => {
     try {
+      // Set persistence to LOCAL before registration
+      await setPersistence(auth, browserLocalPersistence);
       const result = await createUserWithEmailAndPassword(auth, email, password);
       const user = result.user;
 
@@ -179,6 +184,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const googleSignIn = async (): Promise<User> => {
     try {
       const provider = new GoogleAuthProvider();
+      await setPersistence(auth, browserLocalPersistence);
       const result = await signInWithPopup(auth, provider);
       const user = result.user;
 
@@ -211,7 +217,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       provider.addScope('email');
       provider.addScope('name');
 
+      // Set persistence to LOCAL before signing in
+      await setPersistence(auth, browserLocalPersistence);
       const result = await signInWithPopup(auth, provider);
+
       const user = result.user;
 
       const userDocRef = doc(db, 'users', user.uid);
@@ -279,3 +288,5 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     </AuthContext.Provider>
   );
 };
+
+export { };
