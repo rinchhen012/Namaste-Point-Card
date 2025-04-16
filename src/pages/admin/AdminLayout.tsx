@@ -73,14 +73,14 @@ const AdminLayout: React.FC = () => {
               className={navLinkClasses}
               onClick={() => setMenuOpen(false)}
             >
-              Coupons Management
+              Code Management
             </NavLink>
             <NavLink
               to="rewards"
               className={navLinkClasses}
               onClick={() => setMenuOpen(false)}
             >
-              Rewards Management
+              Coupon Management
             </NavLink>
             <NavLink
               to="store-info"

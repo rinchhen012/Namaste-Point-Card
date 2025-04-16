@@ -269,7 +269,7 @@ const AdminRewards: React.FC = () => {
   return (
     <div className="container mx-auto px-4 py-6">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-semibold text-gray-800">Rewards Management</h1>
+        <h1 className="text-2xl font-semibold text-gray-800">Coupon Management</h1>
         <button
           className="px-4 py-2 bg-orange-500 text-white rounded hover:bg-orange-600"
           onClick={openModal}

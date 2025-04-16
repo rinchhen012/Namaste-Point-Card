@@ -411,7 +411,7 @@ const AdminCoupons: React.FC = () => {
 
   return (
     <>
-      <h2 className="text-2xl font-semibold mb-6">Delivery Coupons</h2>
+      <h2 className="text-2xl font-semibold mb-6">Code Management</h2>
 
       {error && (
         <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
@@ -425,7 +425,7 @@ const AdminCoupons: React.FC = () => {
             onClick={() => setShowCreateForm(!showCreateForm)}
             className="bg-orange-600 text-white py-2 px-4 rounded-md hover:bg-orange-700 transition duration-150 ease-in-out"
           >
-            {showCreateForm ? 'Cancel' : 'Create New Coupons'}
+            {showCreateForm ? 'Cancel' : 'Generate New Codes'}
           </button>
           {selectedCouponIds.size > 0 && (
             <PrintableCodes codes={selectedCouponsData} title="Selected Delivery Codes" />
@@ -470,7 +470,7 @@ const AdminCoupons: React.FC = () => {
 
       {showCreateForm && (
         <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-          <h3 className="text-lg font-medium mb-4">Create New Coupons</h3>
+          <h3 className="text-lg font-medium mb-4">Generate New Codes</h3>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
