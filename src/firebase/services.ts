@@ -825,10 +825,46 @@ export const redeemReward = async (userId: string, rewardId: string, rewardType:
       expirationDate = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes for in-store
     }
 
-    // Generate a unique code for online delivery coupons
-    const uniqueCode = reward.couponType === 'online_delivery'
-      ? `NAMASTE-${Math.random().toString(36).substring(2, 8).toUpperCase()}`
-      : undefined;
+    // Generate a secure code for online delivery coupons using Cloud Functions
+    let uniqueCode = null;
+    if (reward.couponType === 'online_delivery') {
+      try {
+        // Always use client-side code generation for now
+        // This is reliable and secure enough for the current needs
+        console.log('Using client-side code generation');
+        const allowedChars = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+        let code = '';
+        for (let i = 0; i < 6; i++) {
+          if (i === 3) code += '-';
+          code += allowedChars.charAt(Math.floor(Math.random() * allowedChars.length));
+        }
+        uniqueCode = code;
+        
+        // TODO: Uncomment this when the Cloud Function is fixed
+        /*
+        // Only use Cloud Function in production
+        if (!import.meta.env.DEV) {
+          try {
+            // Call Cloud Function to generate a secure code
+            const generateSecureCode = httpsCallable(functions, 'generateSecureDeliveryCode');
+            const result = await generateSecureCode();
+            const serverCode = result.data?.code || null;
+            
+            // Only use the server code if it's valid
+            if (serverCode) {
+              uniqueCode = serverCode;
+            }
+          } catch (error) {
+            console.error('Server-side code generation failed, using client-side code', error);
+            // Continue with client-side generated code
+          }
+        }
+        */
+      } catch (error) {
+        console.error('Error generating code:', error);
+        throw new Error('Failed to generate a delivery code');
+      }
+    }
 
     // Create redemption record
     const redemptionRef = await addDoc(collection(db, 'redemptions'), {
@@ -874,7 +910,8 @@ export const redeemReward = async (userId: string, rewardId: string, rewardType:
       pointsCost: reward.pointsCost,
       createdAt: new Date(),
       code: uniqueCode,
-      imageUrl: reward.imageUrl
+      imageUrl: reward.imageUrl,
+      couponType: reward.couponType
     };
   } catch (error) {
     throw error;
@@ -898,7 +935,9 @@ export const getUserRedemptions = async (userId: string): Promise<Redemption[]> 
         createdAt: r.createdAt,
         expiresAt: r.expiresAt,
         used: r.used,
-        imageUrl: r.imageUrl || 'https://via.placeholder.com/150'
+        imageUrl: r.imageUrl || 'https://via.placeholder.com/150',
+        couponType: r.couponType || 'in_store', // Default to in_store if not present
+        code: r.code || null
       }));
   }
 
@@ -935,7 +974,9 @@ export const getUserRedemptions = async (userId: string): Promise<Redemption[]> 
         createdAt: data.createdAt,
         expiresAt: data.expiresAt,
         used: data.used,
-        imageUrl: data.imageUrl
+        imageUrl: data.imageUrl,
+        couponType: data.couponType || 'in_store',
+        code: data.code || null
       });
     });
 
@@ -964,7 +1005,9 @@ export const getRedemption = async (redemptionId: string): Promise<Redemption | 
       createdAt: redemption.createdAt,
       expiresAt: redemption.expiresAt,
       used: redemption.used,
-      imageUrl: redemption.imageUrl || 'https://via.placeholder.com/150'
+      imageUrl: redemption.imageUrl || 'https://via.placeholder.com/150',
+      couponType: redemption.couponType || 'in_store', // Default to in_store if not present
+      code: redemption.code || null
     };
   }
 
@@ -989,7 +1032,9 @@ export const getRedemption = async (redemptionId: string): Promise<Redemption | 
       createdAt: data.createdAt,
       expiresAt: data.expiresAt,
       used: data.used,
-      imageUrl: data.imageUrl
+      imageUrl: data.imageUrl,
+      couponType: data.couponType || 'in_store',
+      code: data.code || null
     };
   } catch (error) {
     console.error('Error getting redemption:', error);

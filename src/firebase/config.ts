@@ -1,7 +1,7 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth, setPersistence, browserLocalPersistence } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
-import { getFunctions } from 'firebase/functions';
+import { getFunctions, connectFunctionsEmulator } from 'firebase/functions';
 import { getStorage } from 'firebase/storage';
 
 // Firebase configuration
@@ -27,7 +27,14 @@ setPersistence(auth, browserLocalPersistence)
   });
 
 const db = getFirestore(app);
-const functions = getFunctions(app);
+// Specify the region explicitly since our cloud functions are deployed to us-central1
+const functions = getFunctions(app, 'us-central1');
+
+// Connect to the Firebase emulator if in development mode
+if (import.meta.env.DEV && import.meta.env.VITE_USE_FIREBASE_EMULATOR === 'true') {
+  connectFunctionsEmulator(functions, 'localhost', 5001);
+}
+
 const storage = getStorage(app);
 
 export { app, auth, db, functions, storage };

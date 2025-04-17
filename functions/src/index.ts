@@ -81,95 +81,95 @@ interface FAQItemData {
  * @param code - The online order code to validate
  * @returns A success/failure message and points awarded
  */
-export const validateOnlineOrderCode = onCall(
-  async (request: CallableRequest<ValidateCodeData>) => {
-    // Check if user is authenticated
-    if (!request.auth) {
-      return { success: false, message: 'Authentication required' };
-    }
+export const validateOnlineOrderCode = onCall({
+  cors: ['http://localhost:5173', 'https://namaste-point-card.web.app', 'https://namaste-point-card.firebaseapp.com']
+}, async (request: CallableRequest<ValidateCodeData>) => {
+  // Check if user is authenticated
+  if (!request.auth) {
+    return { success: false, message: 'Authentication required' };
+  }
 
-    const { code } = request.data;
-    if (!code) {
-      return { success: false, message: 'No code provided' };
-    }
+  const { code } = request.data;
+  if (!code) {
+    return { success: false, message: 'No code provided' };
+  }
 
-    // Get the user ID from the authenticated context
-    const userId = request.auth.uid;
+  // Get the user ID from the authenticated context
+  const userId = request.auth.uid;
 
-    try {
-      // Use a transaction to ensure atomicity
-      const result = await db.runTransaction(async (transaction) => {
-        // Query for the code
-        const codeQuery = db.collection('online_order_codes').where('code', '==', code);
-        const codeSnapshot = await transaction.get(codeQuery);
+  try {
+    // Use a transaction to ensure atomicity
+    const result = await db.runTransaction(async (transaction) => {
+      // Query for the code
+      const codeQuery = db.collection('online_order_codes').where('code', '==', code);
+      const codeSnapshot = await transaction.get(codeQuery);
 
-        // Check if code exists
-        if (codeSnapshot.empty) {
-          return { success: false, message: 'Invalid code' };
-        }
+      // Check if code exists
+      if (codeSnapshot.empty) {
+        return { success: false, message: 'Invalid code' };
+      }
 
-        const codeDoc = codeSnapshot.docs[0];
-        const codeData = codeDoc.data();
+      const codeDoc = codeSnapshot.docs[0];
+      const codeData = codeDoc.data();
 
-        // Check if code is already used
-        if (codeData.isUsed) {
-          return { success: false, message: 'Code already used' };
-        }
+      // Check if code is already used
+      if (codeData.isUsed) {
+        return { success: false, message: 'Code already used' };
+      }
 
-        // Check if code is expired
-        const now = admin.firestore.Timestamp.now();
-        if (codeData.expiresAt.toMillis() < now.toMillis()) {
-          return { success: false, message: 'Code has expired' };
-        }
+      // Check if code is expired
+      const now = admin.firestore.Timestamp.now();
+      if (codeData.expiresAt.toMillis() < now.toMillis()) {
+        return { success: false, message: 'Code has expired' };
+      }
 
-        // Update code to mark as used
-        transaction.update(codeDoc.ref, {
-          isUsed: true,
-          usedAt: now,
-          userId: userId
-        });
-
-        // Add points to user
-        const userRef = db.collection('users').doc(userId);
-        const userDoc = await transaction.get(userRef);
-
-        if (!userDoc.exists) {
-          return { success: false, message: 'User not found' };
-        }
-
-        const userData = userDoc.data();
-        const currentPoints = userData?.points || 0;
-        const pointsToAdd = codeData.pointsAwarded || 5;
-
-        transaction.update(userRef, {
-          points: currentPoints + pointsToAdd,
-          lastVisit: now
-        });
-
-        // Record points transaction
-        const transactionRef = db.collection('points_transactions').doc();
-        transaction.set(transactionRef, {
-          userId: userId,
-          points: pointsToAdd,
-          type: 'online-order',
-          createdAt: now,
-          codeId: codeDoc.id
-        });
-
-        return {
-          success: true,
-          message: 'Code redeemed successfully!',
-          points: pointsToAdd
-        };
+      // Update code to mark as used
+      transaction.update(codeDoc.ref, {
+        isUsed: true,
+        usedAt: now,
+        userId: userId
       });
 
-      return result;
-    } catch (error) {
-      console.error('Error validating code:', error);
-      return { success: false, message: 'An error occurred while processing the code' };
-    }
+      // Add points to user
+      const userRef = db.collection('users').doc(userId);
+      const userDoc = await transaction.get(userRef);
+
+      if (!userDoc.exists) {
+        return { success: false, message: 'User not found' };
+      }
+
+      const userData = userDoc.data();
+      const currentPoints = userData?.points || 0;
+      const pointsToAdd = codeData.pointsAwarded || 5;
+
+      transaction.update(userRef, {
+        points: currentPoints + pointsToAdd,
+        lastVisit: now
+      });
+
+      // Record points transaction
+      const transactionRef = db.collection('points_transactions').doc();
+      transaction.set(transactionRef, {
+        userId: userId,
+        points: pointsToAdd,
+        type: 'online-order',
+        createdAt: now,
+        codeId: codeDoc.id
+      });
+
+      return {
+        success: true,
+        message: 'Code redeemed successfully!',
+        points: pointsToAdd
+      };
+    });
+
+    return result;
+  } catch (error) {
+    console.error('Error validating code:', error);
+    return { success: false, message: 'An error occurred while processing the code' };
   }
-);
+});
 
 /**
  * Validates a QR code check-in based on the code, geolocation, and time constraints
@@ -179,178 +179,147 @@ export const validateOnlineOrderCode = onCall(
  * @param longitude - User's current longitude
  * @returns Success or failure message
  */
-export const validateQRCheckIn = onCall(
-  async (request: CallableRequest<QRCheckInData>) => {
-    // Check if user is authenticated
-    if (!request.auth) {
-      return { success: false, message: 'Authentication required' };
+export const validateQRCheckIn = onCall({
+  cors: ['http://localhost:5173', 'https://namaste-point-card.web.app', 'https://namaste-point-card.firebaseapp.com']
+}, async (request: CallableRequest<QRCheckInData>) => {
+  // Check if user is authenticated
+  if (!request.auth) {
+    return { success: false, message: 'Authentication required' };
+  }
+
+  const { qrCode, latitude, longitude } = request.data;
+  if (!qrCode) {
+    return { success: false, message: 'QR code is required' };
+  }
+
+  if (latitude === undefined || longitude === undefined) {
+    return { success: false, message: 'Location data required' };
+  }
+
+  // Get the user ID from the authenticated context
+  const userId = request.auth.uid;
+
+  try {
+    // Verify the QR code is valid (matches our restaurant codes)
+    // In a real implementation, you might have multiple locations, each with a unique QR code
+    // For simplicity, we'll use a hardcoded list of valid codes here
+    const validQRCodes = {
+      'NAMASTE-TOKYO-MAIN': { lat: 35.6812, lng: 139.6314 },
+      'NAMASTE-OSAKA-MAIN': { lat: 34.6937, lng: 135.5022 }
+    };
+
+    // Check if the QR code is valid
+    if (!Object.keys(validQRCodes).includes(qrCode)) {
+      return { success: false, message: 'Invalid QR code' };
     }
 
-    const { qrCode, latitude, longitude } = request.data;
-    if (!qrCode) {
-      return { success: false, message: 'QR code is required' };
-    }
+    // Get the location associated with this QR code
+    const locationData = validQRCodes[qrCode as keyof typeof validQRCodes];
+    const restaurantLat = locationData.lat;
+    const restaurantLng = locationData.lng;
+    const maxDistanceInMeters = 100; // 100 meters radius
 
-    if (latitude === undefined || longitude === undefined) {
-      return { success: false, message: 'Location data required' };
-    }
+    // Calculate distance between user and restaurant
+    const distance = calculateDistance(
+      latitude,
+      longitude,
+      restaurantLat,
+      restaurantLng
+    );
 
-    // Get the user ID from the authenticated context
-    const userId = request.auth.uid;
-
-    try {
-      // Verify the QR code is valid (matches our restaurant codes)
-      // In a real implementation, you might have multiple locations, each with a unique QR code
-      // For simplicity, we'll use a hardcoded list of valid codes here
-      const validQRCodes = {
-        'NAMASTE-TOKYO-MAIN': { lat: 35.6812, lng: 139.6314 },
-        'NAMASTE-OSAKA-MAIN': { lat: 34.6937, lng: 135.5022 }
-      };
-
-      // Check if the QR code is valid
-      if (!Object.keys(validQRCodes).includes(qrCode)) {
-        return { success: false, message: 'Invalid QR code' };
-      }
-
-      // Get the location associated with this QR code
-      const locationData = validQRCodes[qrCode as keyof typeof validQRCodes];
-      const restaurantLat = locationData.lat;
-      const restaurantLng = locationData.lng;
-      const maxDistanceInMeters = 100; // 100 meters radius
-
-      // Calculate distance between user and restaurant
-      const distance = calculateDistance(
-        latitude,
-        longitude,
-        restaurantLat,
-        restaurantLng
-      );
-
-      // Check if user is within the radius
-      if (distance > maxDistanceInMeters) {
-        return {
-          success: false,
-          message: 'You must be at the restaurant to check in',
-          distance: Math.round(distance)
-        };
-      }
-
-      // Get the user document to check their last QR check-in time
-      const userRef = db.collection('users').doc(userId);
-      let userDoc;
-      try {
-        userDoc = await userRef.get();
-      } catch (userError) {
-        console.error('Error fetching user document:', userError);
-        return {
-          success: false,
-          message: 'Failed to access user data. Please try again later.',
-          error: 'user_access_error'
-        };
-      }
-
-      if (!userDoc.exists) {
-        return { success: false, message: 'User not found' };
-      }
-
-      const userData = userDoc.data();
-
-      // Check if user has already checked in with this QR code recently (within 22 hours)
-      if (userData?.lastQRCheckIn && userData.lastQRCheckIn.qrCode === qrCode) {
-        const lastCheckInTime = userData.lastQRCheckIn.timestamp.toMillis();
-        const now = Date.now();
-        const hoursSinceLastCheckIn = (now - lastCheckInTime) / (1000 * 60 * 60);
-
-        // If less than 22 hours have passed, reject the check-in
-        if (hoursSinceLastCheckIn < 22) {
-          return {
-            success: false,
-            message: 'You have already checked in today. Please come back tomorrow!'
-          };
-        }
-      }
-
-      // Award points for check-in (using a transaction for atomicity)
-      try {
-        await db.runTransaction(async (transaction) => {
-          // Get latest user document within the transaction
-          const latestUserDoc = await transaction.get(userRef);
-          if (!latestUserDoc.exists) {
-            throw new Error('User not found');
-          }
-
-          const latestUserData = latestUserDoc.data();
-          const currentPoints = latestUserData?.points || 0;
-          const pointsToAdd = 1; // 1 point for check-in
-
-          // Update user points and last QR check-in
-          transaction.update(userRef, {
-            points: currentPoints + pointsToAdd,
-            lastQRCheckIn: {
-              timestamp: admin.firestore.Timestamp.now(),
-              qrCode: qrCode
-            }
-          });
-
-          // Record points transaction
-          transaction.set(db.collection('points_transactions').doc(), {
-            userId: userId,
-            points: pointsToAdd,
-            type: 'in-store',
-            createdAt: admin.firestore.Timestamp.now(),
-            location: new admin.firestore.GeoPoint(latitude, longitude),
-            note: 'QR code check-in',
-            metadata: {
-              qrCode: qrCode
-            }
-          });
-        });
-      } catch (transactionError: any) {
-        console.error('Transaction error during check-in:', transactionError);
-
-        // Handle permission errors
-        if (transactionError.code === 'permission-denied') {
-          return {
-            success: false,
-            message: 'You do not have permission to check in. Please contact support.',
-            error: 'permission_denied'
-          };
-        }
-
-        // Handle missing index errors
-        if (transactionError.message && transactionError.message.includes('index')) {
-          console.error('Missing index error. Please check Firestore indexes.');
-          return {
-            success: false,
-            message: 'Service configuration error. Please try again later.',
-            error: 'missing_index'
-          };
-        }
-
-        return {
-          success: false,
-          message: 'Failed to process check-in. Please try again later.',
-          error: 'transaction_error'
-        };
-      }
-
+    // Check if user is within the radius
+    if (distance > maxDistanceInMeters) {
       return {
-        success: true,
-        message: 'Check-in successful! 1 point added to your account.'
+        success: false,
+        message: 'You must be at the restaurant to check in',
+        distance: Math.round(distance)
       };
-    } catch (error: any) {
-      console.error('Error validating QR check-in:', error);
+    }
 
-      // Provide more specific error messages based on error type
-      if (error.code === 'permission-denied') {
+    // Get the user document to check their last QR check-in time
+    const userRef = db.collection('users').doc(userId);
+    let userDoc;
+    try {
+      userDoc = await userRef.get();
+    } catch (userError) {
+      console.error('Error fetching user document:', userError);
+      return {
+        success: false,
+        message: 'Failed to access user data. Please try again later.',
+        error: 'user_access_error'
+      };
+    }
+
+    if (!userDoc.exists) {
+      return { success: false, message: 'User not found' };
+    }
+
+    const userData = userDoc.data();
+
+    // Check if user has already checked in with this QR code recently (within 22 hours)
+    if (userData?.lastQRCheckIn && userData.lastQRCheckIn.qrCode === qrCode) {
+      const lastCheckInTime = userData.lastQRCheckIn.timestamp.toMillis();
+      const now = Date.now();
+      const hoursSinceLastCheckIn = (now - lastCheckInTime) / (1000 * 60 * 60);
+
+      // If less than 22 hours have passed, reject the check-in
+      if (hoursSinceLastCheckIn < 22) {
         return {
           success: false,
-          message: 'You do not have permission to perform this action.',
+          message: 'You have already checked in today. Please come back tomorrow!'
+        };
+      }
+    }
+
+    // Award points for check-in (using a transaction for atomicity)
+    try {
+      await db.runTransaction(async (transaction) => {
+        // Get latest user document within the transaction
+        const latestUserDoc = await transaction.get(userRef);
+        if (!latestUserDoc.exists) {
+          throw new Error('User not found');
+        }
+
+        const latestUserData = latestUserDoc.data();
+        const currentPoints = latestUserData?.points || 0;
+        const pointsToAdd = 1; // 1 point for check-in
+
+        // Update user points and last QR check-in
+        transaction.update(userRef, {
+          points: currentPoints + pointsToAdd,
+          lastQRCheckIn: {
+            timestamp: admin.firestore.Timestamp.now(),
+            qrCode: qrCode
+          }
+        });
+
+        // Record points transaction
+        transaction.set(db.collection('points_transactions').doc(), {
+          userId: userId,
+          points: pointsToAdd,
+          type: 'in-store',
+          createdAt: admin.firestore.Timestamp.now(),
+          location: new admin.firestore.GeoPoint(latitude, longitude),
+          note: 'QR code check-in',
+          metadata: {
+            qrCode: qrCode
+          }
+        });
+      });
+    } catch (transactionError: any) {
+      console.error('Transaction error during check-in:', transactionError);
+
+      // Handle permission errors
+      if (transactionError.code === 'permission-denied') {
+        return {
+          success: false,
+          message: 'You do not have permission to check in. Please contact support.',
           error: 'permission_denied'
         };
       }
 
-      if (error.message && error.message.includes('index')) {
+      // Handle missing index errors
+      if (transactionError.message && transactionError.message.includes('index')) {
         console.error('Missing index error. Please check Firestore indexes.');
         return {
           success: false,
@@ -361,12 +330,43 @@ export const validateQRCheckIn = onCall(
 
       return {
         success: false,
-        message: 'An error occurred during check-in. Please try again later.',
-        error: 'unknown_error'
+        message: 'Failed to process check-in. Please try again later.',
+        error: 'transaction_error'
       };
     }
+
+    return {
+      success: true,
+      message: 'Check-in successful! 1 point added to your account.'
+    };
+  } catch (error: any) {
+    console.error('Error validating QR check-in:', error);
+
+    // Provide more specific error messages based on error type
+    if (error.code === 'permission-denied') {
+      return {
+        success: false,
+        message: 'You do not have permission to perform this action.',
+        error: 'permission_denied'
+      };
+    }
+
+    if (error.message && error.message.includes('index')) {
+      console.error('Missing index error. Please check Firestore indexes.');
+      return {
+        success: false,
+        message: 'Service configuration error. Please try again later.',
+        error: 'missing_index'
+      };
+    }
+
+    return {
+      success: false,
+      message: 'An error occurred during check-in. Please try again later.',
+      error: 'unknown_error'
+    };
   }
-);
+});
 
 /**
  * Generates a batch of unique online order codes
@@ -1027,3 +1027,95 @@ export const manageFAQItem = onCall(
     }
   }
 );
+
+/**
+ * Generates a secure redemption code for delivery coupons
+ * Format: XXX-XXX with non-ambiguous characters (A-Z, 2-9, excluding 0, O, 1, I, L)
+ * This results in a character set of approx. 32 chars: ABCDEFGHJKMNPQRSTUVWXYZ23456789
+ */
+export const generateSecureDeliveryCode = onCall({
+  cors: ['http://localhost:5173', 'https://namaste-point-card.web.app', 'https://namaste-point-card.firebaseapp.com']
+}, async (request: CallableRequest<{}>) => {
+  // Check if user is authenticated
+  if (!request.auth) {
+    throw new HttpsError(
+      'unauthenticated',
+      'Authentication required'
+    );
+  }
+
+  try {
+    // Define the allowed character set (non-ambiguous characters only)
+    const ALLOWED_CHARS = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+    const CODE_LENGTH = 6; // Total length without the hyphen
+    
+    // Use crypto for secure random generation
+    const crypto = require('crypto');
+    
+    // Generate random bytes
+    const buffer = crypto.randomBytes(CODE_LENGTH);
+    
+    // Convert to our character set
+    let code = '';
+    for (let i = 0; i < CODE_LENGTH; i++) {
+      // Insert hyphen after third character
+      if (i === 3) {
+        code += '-';
+      }
+      
+      // Get a random index into our character set
+      const index = buffer[i] % ALLOWED_CHARS.length;
+      code += ALLOWED_CHARS.charAt(index);
+    }
+    
+    // Check if this code already exists in the database
+    const codesQuery = await db.collection('redemptions')
+      .where('code', '==', code)
+      .limit(1)
+      .get();
+      
+    // If code already exists (extremely unlikely but possible), generate a new one
+    if (!codesQuery.empty) {
+      // Instead of recursively calling the function, generate a new code in a loop
+      // to avoid the TypeScript error with recursive references
+      let isUnique = false;
+      while (!isUnique) {
+        // Generate new random bytes
+        const newBuffer = crypto.randomBytes(CODE_LENGTH);
+        
+        // Create a new code
+        let newCode = '';
+        for (let i = 0; i < CODE_LENGTH; i++) {
+          if (i === 3) {
+            newCode += '-';
+          }
+          const newIndex = newBuffer[i] % ALLOWED_CHARS.length;
+          newCode += ALLOWED_CHARS.charAt(newIndex);
+        }
+        
+        // Check if this new code exists
+        const newQuery = await db.collection('redemptions')
+          .where('code', '==', newCode)
+          .limit(1)
+          .get();
+          
+        if (newQuery.empty) {
+          code = newCode;
+          isUnique = true;
+        }
+      }
+    }
+    
+    return {
+      success: true,
+      code: code
+    };
+  } catch (error) {
+    console.error('Error generating secure delivery code:', error);
+    throw new HttpsError(
+      'internal',
+      'Error generating secure delivery code',
+      error
+    );
+  }
+});
