@@ -33,7 +33,9 @@
     "hide": "隠す",
     "viewHistory": "履歴を見る",
     "viewRedemptionHistory": "交換履歴を見る",
-    "viewPointsHistory": "ポイント履歴を見る"
+    "viewPointsHistory": "ポイント履歴を見る",
+    "copy": "コピー",
+    "copied": "コピー済み！"
   },
   "auth": {
     "login": "ログイン",
@@ -162,6 +164,7 @@
     "redeem": "交換する",
     "confirmRedeem": "{{reward}}を{{points}}ポイントで交換しますか？",
     "redemptionWarning": "⚠️ このクーポンは発行後10分間のみ有効です。誤って発行された場合、再発行はできませんのでご注意ください。",
+    "deliveryRedemptionWarning": "⚠️ このデリバリーコードは12時間有効です。誤って発行された場合、再発行はできませんのでご注意ください。",
     "showToStaffInstructions": "ご注文の際にこの画面をスタッフにお見せください。カウントダウンはこのクーポンの有効期限を示しています。",
     "validUntil": "{{time}}まで有効",
     "expiresInDays": "{{days}}日で有効期限切れ",
@@ -189,9 +192,10 @@
     "usedSuccess": "クーポン使用済み",
     "deliveryCodeTitle": "デリバリーコード",
     "howToUseDeliveryCode": "このコードの使い方",
+    "deliveryInstructions": "オンラインデリバリー注文での使用方法",
     "deliveryStep1": "出前館またはUber Eatsで注文する",
-    "deliveryStep2": "注文の備考欄にこのコードを入力する",
-    "deliveryStep3": "スタッフが注文準備時にコードを確認します",
+    "deliveryStep2": "注文時、お会計画面の備考欄にこのコードを入力する",
+    "deliveryStep3": "スタッフが注文準備時にコードを確認します（12時間有効）",
     "inStoreBadge": "店内利用(10分)",
     "onlineDeliveryBadge": "デリバリー(12時間)"
   },
@@ -239,47 +243,7 @@
     "adminAdjustment": "管理者調整",
     "noPointsHistory": "ポイント履歴はまだありません"
   },
-  "notifications": {
-    "notSupported": "お使いのブラウザはプッシュ通知をサポートしていません。",
-    "enableNotifications": "通知を有効にする",
-    "enableDescription": "ポイント更新や期限切れ間近のリワードについてお知らせします",
-    "permissionDenied": "通知の許可が拒否されました",
-    "permissionDeniedHint": "通知を受け取るには、ブラウザ設定で通知を有効にしてください",
-    "preferences": "通知設定",
-    "pointsUpdates": "ポイント更新",
-    "expiringRewards": "期限切れのクーポン",
-    "specialOffers": "特別オファーとプロモーション",
-    "enablePrompt": "最新情報を受け取る",
-    "enablePromptDesc": "ポイント、期限切れリワード、特別オファーの更新情報を受け取るには通知を有効にしてください",
-    "goToSettings": "通知設定へ",
-    "browserNotSupported": "お使いのブラウザでは通知がサポートされていません",
-    "permissionTitle": "通知を有効にする",
-    "permissionDescription": "ポイントの更新、期限切れクーポン、特別オファーについて通知を受け取りましょう。あとでカスタマイズできます。",
-    "allowButton": "通知を許可する",
-    "enable": "有効にする",
-    "openSettings": "設定を開く",
-    "instructions": {
-      "default": "ポイントとリワードについての最新情報を受け取るには通知を許可してください",
-      "safari": "Safariでは、ブラウザ設定で通知の許可が必要な場合があります",
-      "iOS": "iOSでは通知の要求があったら許可する必要があります",
-      "safariIOS": "iPhoneでは、通知を有効にするためにChromeかFirefoxでこのサイトを開いてください"
-    },
-    "errors": {
-      "general": "通知の有効化中にエラーが発生しました",
-      "permissionDenied": "通知の許可が拒否されました",
-      "subscriptionFailed": "通知の登録に失敗しました。後でお試しください",
-      "safariIOS": "iOSのSafariはウェブプッシュ通知をサポートしていません",
-      "noPushManager": "お使いのブラウザはプッシュ通知をサポートしていません",
-      "noServiceWorker": "お使いのブラウザはサービスワーカーをサポートしていません。通知には必須です"
-    },
-    "maybeLater": "あとで",
-    "blockedTitle": "通知はブロックされています",
-    "blockedMessage": "通知を有効にするには、ブラウザの設定を更新してください：",
-    "step1": "ブラウザのアドレスバーのロック/情報アイコンをクリック",
-    "step2": "サイト設定で「通知」を探す",
-    "step3": "「ブロック」から「許可」に変更する",
-    "toggleAll": "すべての通知を有効にする"
-  },
+  "notifications": {},
   "info": {
     "restaurant": "ナマステ成増店",
     "address": "〒175-0094, 東京都, 板橋区, 成増２丁目5-3, グリーンビル 102",

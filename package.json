@@ -11,8 +11,7 @@
     "build:all": "npm run build && npm run build:admin",
     "build:analyze": "cross-env ANALYZE=true npm run build",
     "lint": "eslint .",
-    "preview": "vite preview",
-    "generate-vapid-keys": "./scripts/generate-vapid-keys.sh"
+    "preview": "vite preview"
   },
   "dependencies": {
     "date-fns": "^4.1.0",

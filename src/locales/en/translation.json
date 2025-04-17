@@ -27,7 +27,9 @@
     "hide": "Hide",
     "viewHistory": "View History",
     "viewRedemptionHistory": "View Redemption History",
-    "viewPointsHistory": "View Points History"
+    "viewPointsHistory": "View Points History",
+    "copy": "Copy",
+    "copied": "Copied!"
   },
   "auth": {
     "login": "Login",
@@ -159,6 +161,7 @@
     "redeem": "Redeem",
     "confirmRedeem": "Redeem {{reward}} for {{points}} points?",
     "redemptionWarning": "⚠️ This coupon is valid for 10 minutes only after redemption. It cannot be reissued if redeemed by mistake.",
+    "deliveryRedemptionWarning": "⚠️ This delivery code is valid for 12 hours. It cannot be reissued if redeemed by mistake.",
     "showToStaffInstructions": "Please show this screen to the staff when placing your order. The countdown indicates when this coupon expires.",
     "validUntil": "Valid until {{time}}",
     "expiresInDays": "Expires in {{days}} days",
@@ -186,9 +189,10 @@
     "usedSuccess": "Coupon Used",
     "deliveryCodeTitle": "Your Delivery Code",
     "howToUseDeliveryCode": "How to Use This Code",
+    "deliveryInstructions": "Instructions for Online Delivery Orders",
     "deliveryStep1": "Place an order via Demaecan or Ubereats",
-    "deliveryStep2": "Enter this code in the order notes/remarks field",
-    "deliveryStep3": "Staff will verify the code when preparing your order",
+    "deliveryStep2": "Enter this code in the order notes/remarks field when checking out",
+    "deliveryStep3": "Staff will verify the code when preparing your order (valid for 12 hours)",
     "inStoreBadge": "In-store (10 min)",
     "onlineDeliveryBadge": "Online Delivery (12 hrs)"
   },
@@ -214,26 +218,7 @@
     "deleteWarning": "All your data including points and redemption history will be permanently deleted.",
     "logoutConfirmation": "Are you sure you want to log out?"
   },
-  "notifications": {
-    "notSupported": "Push notifications are not supported in your browser.",
-    "permissionTitle": "Enable Notifications",
-    "permissionDescription": "Get notified about point updates, expiring rewards, and special offers. You can customize these later.",
-    "allowButton": "Allow Notifications",
-    "maybeLater": "Maybe Later",
-    "blockedTitle": "Notifications are blocked",
-    "blockedMessage": "To enable notifications, please update your browser settings:",
-    "step1": "Click the lock/info icon in your browser address bar",
-    "step2": "Find \"Notifications\" in the site settings",
-    "step3": "Change from \"Block\" to \"Allow\"",
-    "preferences": "Notification Preferences",
-    "enable": "Enable",
-    "enableNotifications": "Enable Notifications",
-    "enableDescription": "We will notify you about point updates and rewards that are about to expire",
-    "toggleAll": "Enable all notifications",
-    "pointsUpdates": "Points updates",
-    "expiringRewards": "Expiring rewards",
-    "specialOffers": "Special offers and promotions"
-  },
+  "notifications": {},
   "pointsHistory": {
     "history": "Points History",
     "earned": "Earned {{points}} points",

@@ -14,16 +14,6 @@ export interface UserProfile {
   };
   language?: 'en' | 'ja';
   role?: 'user' | 'admin';
-  notifications?: {
-    isEnabled: boolean;
-    token?: string;
-    lastUpdated?: Timestamp;
-    preferences: {
-      pointsUpdates: boolean;
-      expiringRewards: boolean;
-      specialOffers: boolean;
-    };
-  };
 }
 
 export interface Coupon {

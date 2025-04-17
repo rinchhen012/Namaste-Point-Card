@@ -11,8 +11,6 @@ const isLocalhost = Boolean(
 type Config = {
   onSuccess?: (registration: ServiceWorkerRegistration) => void;
   onUpdate?: (registration: ServiceWorkerRegistration) => void;
-  onNotificationPermissionChange?: (permission: NotificationPermission) => void;
-  enabledNotifications?: boolean;
   skipWaiting?: boolean;
 };
 
@@ -71,26 +69,6 @@ export function register(config?: Config): void {
           console.log(
             'This web app is being served cache-first by a service worker.'
           );
-
-          // Handle notification permission changes when requested
-          if (config?.enabledNotifications && 'Notification' in window) {
-            const permissionState = Notification.permission;
-
-            if (config.onNotificationPermissionChange) {
-              config.onNotificationPermissionChange(permissionState);
-            }
-
-            // Listen for permission changes (this works in some browsers)
-            if (navigator.permissions && navigator.permissions.query) {
-              navigator.permissions.query({ name: 'notifications' }).then((status) => {
-                status.onchange = function() {
-                  if (config.onNotificationPermissionChange) {
-                    config.onNotificationPermissionChange(Notification.permission);
-                  }
-                };
-              });
-            }
-          }
         });
       } else {
         // Is not localhost. Just register service worker
@@ -166,26 +144,6 @@ function registerValidSW(swUrl: string, config?: Config): void {
           }
         };
       };
-
-      // Handle notification permission changes when requested
-      if (config?.enabledNotifications && 'Notification' in window) {
-        const permissionState = Notification.permission;
-
-        if (config.onNotificationPermissionChange) {
-          config.onNotificationPermissionChange(permissionState);
-        }
-
-        // Listen for permission changes (this works in some browsers)
-        if (navigator.permissions && navigator.permissions.query) {
-          navigator.permissions.query({ name: 'notifications' as PermissionName }).then((status) => {
-            status.onchange = function() {
-              if (config.onNotificationPermissionChange) {
-                config.onNotificationPermissionChange(Notification.permission);
-              }
-            };
-          });
-        }
-      }
     })
     .catch((error) => {
       console.error('Error during service worker registration:', error);

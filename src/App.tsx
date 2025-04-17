@@ -45,31 +45,15 @@ const Loading = () => (
 );
 
 function App() {
-  const [notificationPermission, setNotificationPermission] = useState<NotificationPermission | null>(null);
-
   useEffect(() => {
-    // Check if notifications are supported
-    if ('Notification' in window) {
-      setNotificationPermission(Notification.permission);
-    }
-
     // Register main service worker for PWA
     registerServiceWorker({
-      // Disable notifications in service worker
-      enabledNotifications: false,
       skipWaiting: true,
       onSuccess: (registration) => {
         console.log('Main service worker registration successful with scope: ', registration.scope);
-      },
-      // We're intentionally not using the onUpdate callback to avoid the update banner
-      onNotificationPermissionChange: (permission) => {
-        console.log('Notification permission changed:', permission);
-        setNotificationPermission(permission);
       }
+      // We're intentionally not using the onUpdate callback to avoid the update banner
     });
-
-    // NOTE: Firebase messaging service worker registration has been removed
-    // as notifications feature is temporarily disabled
   }, []);
 
   return (
