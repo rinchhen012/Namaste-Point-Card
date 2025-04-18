@@ -265,6 +265,19 @@ const RedemptionPage: React.FC = () => {
         <div className="w-full max-w-3xl mx-auto px-4 py-6 space-y-8 overflow-hidden">
           <div className="bg-white rounded-lg shadow-md p-6 max-w-sm mx-auto overflow-hidden">
             <h2 className="text-xl font-medium mb-4 text-center">
+              {/* Coupon Type Badge (single language) */}
+              <div className="mb-2 flex justify-center">
+                <span className={`px-2 py-1 text-xs rounded font-semibold ${reward.couponType === 'in_store' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800'}`}>
+                  {(() => {
+                    const lang = userProfile?.language || 'en';
+                    if (reward.couponType === 'in_store') {
+                      return lang === 'ja' ? '店内' : 'In-store';
+                    } else {
+                      return lang === 'ja' ? 'デリバリー' : 'Delivery';
+                    }
+                  })()}
+                </span>
+              </div>
               {t('rewards.confirmRedeem', { reward: reward.name[userProfile.language], points: reward.pointsCost })}
             </h2>
             {reward.imageUrl && (
@@ -352,6 +365,20 @@ const RedemptionPage: React.FC = () => {
         <div className="w-full max-w-sm mx-auto px-4 py-6 overflow-hidden">
           <div className={`bg-white rounded-lg shadow-md p-6 max-w-xs mx-auto overflow-hidden w-full ${showSuccessAnimation ? 'animate-slide-up-fade' : ''}`}>
             <h2 className="text-xl font-semibold mb-2 text-gray-800 break-words overflow-hidden">
+              {/* Coupon Type Badge (single language) */}
+              <div className="mb-2 flex justify-center">
+                <span className={`px-2 py-1 text-xs rounded font-semibold ${((reward && reward.couponType) || (redemption && redemption.couponType)) === 'in_store' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800'}`}>
+                  {(() => {
+                    const lang = userProfile?.language || 'en';
+                    const type = (reward && reward.couponType) || (redemption && redemption.couponType) || 'in_store';
+                    if (type === 'in_store') {
+                      return lang === 'ja' ? '店内' : 'In-store';
+                    } else {
+                      return lang === 'ja' ? 'デリバリー' : 'Delivery';
+                    }
+                  })()}
+                </span>
+              </div>
               {userProfile.language === 'ja' && 'rewardNameJa' in redemption ? redemption.rewardNameJa : redemption.rewardName}
             </h2>
             {'imageUrl' in redemption && redemption.imageUrl && (

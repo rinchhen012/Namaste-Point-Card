@@ -218,6 +218,19 @@ const CouponsPage: React.FC = () => {
             }}
           >
             <div className="mb-3 min-w-0 flex-grow">
+              {/* Coupon Type Badge (single language) */}
+              <div className="mb-1">
+                <span className={`px-2 py-1 text-xs rounded font-semibold ${coupon.couponType === 'in_store' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800'}`}>
+                  {(() => {
+                    const lang = userProfile?.language || 'en';
+                    if (coupon.couponType === 'in_store') {
+                      return lang === 'ja' ? '店内' : 'In-store';
+                    } else {
+                      return lang === 'ja' ? 'デリバリー' : 'Delivery';
+                    }
+                  })()}
+                </span>
+              </div>
               <h3 className="font-semibold text-lg text-gray-800 mb-1 break-words line-clamp-2 overflow-hidden">
                 {typeof coupon.name === 'string'
                   ? coupon.name

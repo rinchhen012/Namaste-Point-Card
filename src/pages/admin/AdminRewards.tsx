@@ -313,6 +313,20 @@ const AdminRewards: React.FC = () => {
                 </div>
               )}
               <div className="p-4 flex-grow">
+                {/* Coupon Type Badge (single language) */}
+                <div className="mb-2">
+                  <span className={`px-2 py-1 text-xs rounded font-semibold ${reward.couponType === 'in_store' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800'}`}>
+                    {(() => {
+                      // Use language variable if available, default to 'en'
+                      const lang = (typeof userProfile !== 'undefined' && userProfile?.language) ? userProfile.language : 'en';
+                      if (reward.couponType === 'in_store') {
+                        return lang === 'ja' ? '店内' : 'In-store';
+                      } else {
+                        return lang === 'ja' ? 'デリバリー' : 'Delivery';
+                      }
+                    })()}
+                  </span>
+                </div>
                 <div className="flex justify-between items-start mb-2">
                   <h2 className="text-lg font-semibold text-gray-800 flex-1 mr-2 truncate">{reward.name}</h2>
                 </div>
