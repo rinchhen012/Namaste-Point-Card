@@ -647,6 +647,42 @@ const AdminRewards: React.FC = () => {
               </div>
 
               <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Coupon Type
+                </label>
+                <div className="flex space-x-4">
+                  <div className="flex items-center">
+                    <input
+                      type="radio"
+                      id="edit-in_store"
+                      name="couponType"
+                      value="in_store"
+                      checked={formData.couponType === 'in_store'}
+                      onChange={() => setFormData({ ...formData, couponType: 'in_store' })}
+                      className="h-4 w-4 text-primary focus:ring-primary border-gray-300"
+                    />
+                    <label htmlFor="edit-in_store" className="ml-2 block text-sm text-gray-700">
+                      In-store (10 min)
+                    </label>
+                  </div>
+                  <div className="flex items-center">
+                    <input
+                      type="radio"
+                      id="edit-online_delivery"
+                      name="couponType"
+                      value="online_delivery"
+                      checked={formData.couponType === 'online_delivery'}
+                      onChange={() => setFormData({ ...formData, couponType: 'online_delivery' })}
+                      className="h-4 w-4 text-primary focus:ring-primary border-gray-300"
+                    />
+                    <label htmlFor="edit-online_delivery" className="ml-2 block text-sm text-gray-700">
+                      Online Delivery (12 hrs)
+                    </label>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mb-4">
                 {formData.imageUrl && (
                   <div className="mb-2">
                     <label className="block text-sm font-medium text-gray-700 mb-1">

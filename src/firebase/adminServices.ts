@@ -106,15 +106,15 @@ export const getStatsData = async () => {
       pointsRedeemed
     };
   } catch (error) {
-    console.error('Error getting stats data:', error);
+    console.error('Error getting stats data:', error as any);
 
     // If it's a permissions error, we already have a more specific error message
-    if (error.message && error.message.includes("Missing or insufficient permissions")) {
+    if ((error as any).message && (error as any).message.includes("Missing or insufficient permissions")) {
       throw error;
     }
 
     // For other errors, throw a generic error
-    throw new Error(`Failed to fetch stats data: ${error.message || 'Unknown error'}`);
+    throw new Error(`Failed to fetch stats data: ${(error as any).message || 'Unknown error'}`);
   }
 };
 
@@ -183,15 +183,15 @@ export const getRecentOrders = async (limitCount = 10) => {
 
     return orders;
   } catch (error) {
-    console.error('Error getting recent orders:', error);
+    console.error('Error getting recent orders:', error as any);
 
     // If it's a permissions error, we already have a more specific error message
-    if (error.message && error.message.includes("Missing or insufficient permissions")) {
+    if ((error as any).message && (error as any).message.includes("Missing or insufficient permissions")) {
       throw error;
     }
 
     // For other errors, throw a generic error
-    throw new Error(`Failed to fetch recent orders: ${error.message || 'Unknown error'}`);
+    throw new Error(`Failed to fetch recent orders: ${(error as any).message || 'Unknown error'}`);
   }
 };
 
@@ -222,7 +222,7 @@ export const getCoupons = async () => {
 
     return coupons;
   } catch (error) {
-    console.error('Error getting coupons:', error);
+    console.error('Error getting coupons:', error as any);
     throw error;
   }
 };
@@ -321,7 +321,7 @@ export const createCoupon = async (
     // Return the result from the Cloud Function
     return result.data;
   } catch (error) {
-    console.error('Error creating coupons:', error);
+    console.error('Error creating coupons:', error as any);
     throw error;
   }
 };
@@ -339,7 +339,7 @@ export const deactivateCoupon = async (couponId: string) => {
       success: true
     };
   } catch (error) {
-    console.error('Error deactivating coupon:', error);
+    console.error('Error deactivating coupon:', error as any);
     throw error;
   }
 };
@@ -367,7 +367,7 @@ export async function getUsersList(
             displayName: 'John Smith',
             points: 25,
             role: 'user',
-            createdAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
+            createdAt: Timestamp.fromDate(new Date(Date.now() - 30 * 24 * 60 * 60 * 1000))
           },
           {
             uid: 'user2',
@@ -375,7 +375,7 @@ export async function getUsersList(
             displayName: 'Tanaka Yuki',
             points: 42,
             role: 'user',
-            createdAt: new Date(Date.now() - 20 * 24 * 60 * 60 * 1000)
+            createdAt: Timestamp.fromDate(new Date(Date.now() - 20 * 24 * 60 * 60 * 1000))
           },
           {
             uid: 'admin1',
@@ -383,7 +383,7 @@ export async function getUsersList(
             displayName: 'Admin User',
             points: 0,
             role: 'admin',
-            createdAt: new Date(Date.now() - 60 * 24 * 60 * 60 * 1000)
+            createdAt: Timestamp.fromDate(new Date(Date.now() - 60 * 24 * 60 * 60 * 1000))
           }
         ],
         hasMore: false
@@ -429,7 +429,7 @@ export async function getUsersList(
 
     return { users, hasMore };
   } catch (error) {
-    console.error('Error getting users:', error);
+    console.error('Error getting users:', error as any);
     throw error;
   }
 }
@@ -444,7 +444,7 @@ export async function setUserAsAdmin(userId: string, isAdmin: boolean): Promise<
       role: isAdmin ? 'admin' : 'user'
     });
   } catch (error) {
-    console.error('Error setting user as admin:', error);
+    console.error('Error setting user as admin:', error as any);
     throw error;
   }
 }
@@ -500,7 +500,7 @@ export async function adjustUserPoints(
       }
     });
   } catch (error) {
-    console.error('Error adjusting user points:', error);
+    console.error('Error adjusting user points:', error as any);
     throw error;
   }
 }
@@ -521,7 +521,8 @@ export async function getAllRewardsList(): Promise<Reward[]> {
           descriptionJa: '次回の注文でナンが無料',
           pointsCost: 10,
           isActive: true,
-          imageUrl: 'https://example.com/naan.jpg'
+          imageUrl: 'https://example.com/naan.jpg',
+          couponType: 'in_store'
         },
         {
           id: 'reward2',
@@ -531,7 +532,8 @@ export async function getAllRewardsList(): Promise<Reward[]> {
           descriptionJa: '次回の注文で10%割引',
           pointsCost: 20,
           isActive: true,
-          imageUrl: 'https://example.com/discount.jpg'
+          imageUrl: 'https://example.com/discount.jpg',
+          couponType: 'in_store'
         }
       ];
     }
@@ -551,13 +553,14 @@ export async function getAllRewardsList(): Promise<Reward[]> {
         descriptionJa: data.descriptionJa || '',
         pointsCost: data.pointsCost || data.points || 0,
         isActive: data.isActive || data.active || false,
-        imageUrl: data.imageUrl || ''
+        imageUrl: data.imageUrl || '',
+        couponType: data.couponType || 'in_store'
       });
     });
 
     return rewards;
   } catch (error) {
-    console.error('Error getting rewards:', error);
+    console.error('Error getting rewards:', error as any);
     throw error;
   }
 }
@@ -575,7 +578,7 @@ export async function createNewReward(rewardData: Omit<Reward, 'id'>): Promise<R
       ...rewardData
     };
   } catch (error) {
-    console.error('Error creating reward:', error);
+    console.error('Error creating reward:', error as any);
     throw error;
   }
 }
@@ -588,7 +591,7 @@ export async function updateExistingReward(rewardId: string, data: Partial<Rewar
     const rewardRef = doc(db, 'rewards', rewardId);
     await updateDoc(rewardRef, data);
   } catch (error) {
-    console.error('Error updating reward:', error);
+    console.error('Error updating reward:', error as any);
     throw error;
   }
 }
@@ -622,7 +625,7 @@ export async function uploadRewardImage(file: File, rewardId?: string): Promise<
     const downloadUrl = await getDownloadURL(storageRef);
     return downloadUrl;
   } catch (error) {
-    console.error('Error uploading reward image:', error);
+    console.error('Error uploading reward image:', error as any);
     throw error;
   }
 }
@@ -646,18 +649,18 @@ export async function getOnlineOrderCodes(
           code: 'NAMASTE-12345',
           used: false,
           pointsAwarded: 5,
-          createdAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
-          expiresAt: new Date(Date.now() + 25 * 24 * 60 * 60 * 1000)
+          createdAt: Timestamp.fromDate(new Date(Date.now() - 5 * 24 * 60 * 60 * 1000)),
+          expiresAt: Timestamp.fromDate(new Date(Date.now() + 25 * 24 * 60 * 60 * 1000))
         },
         {
           id: 'code2',
           code: 'NAMASTE-67890',
           used: true,
           pointsAwarded: 5,
-          createdAt: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000),
-          expiresAt: new Date(Date.now() + 20 * 24 * 60 * 60 * 1000),
+          createdAt: Timestamp.fromDate(new Date(Date.now() - 10 * 24 * 60 * 60 * 1000)),
+          expiresAt: Timestamp.fromDate(new Date(Date.now() + 20 * 24 * 60 * 60 * 1000)),
           usedBy: 'user123',
-          usedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000)
+          usedAt: Timestamp.fromDate(new Date(Date.now() - 2 * 24 * 60 * 60 * 1000))
         }
       ];
     }
@@ -699,7 +702,7 @@ export async function getOnlineOrderCodes(
 
     return codes;
   } catch (error) {
-    console.error('Error getting online order codes:', error);
+    console.error('Error getting online order codes:', error as any);
     throw error;
   }
 }
@@ -729,7 +732,7 @@ export async function generateNewOnlineOrderCodes(
 
     return data.codes;
   } catch (error) {
-    console.error('Error generating online order codes:', error);
+    console.error('Error generating online order codes:', error as any);
     throw error;
   }
 }
@@ -754,7 +757,7 @@ export async function invalidateOnlineOrderCode(code: string): Promise<void> {
       expiresAt: Timestamp.now()
     });
   } catch (error) {
-    console.error('Error invalidating online order code:', error);
+    console.error('Error invalidating online order code:', error as any);
     throw error;
   }
 }
@@ -775,7 +778,7 @@ export async function getDashboardStats(): Promise<{
     const result = await statsFunction();
     return result.data as any;
   } catch (error) {
-    console.error('Error getting dashboard stats:', error);
+    console.error('Error getting dashboard stats:', error as any);
     throw error;
   }
 }
@@ -790,7 +793,7 @@ export async function addAdminRole(email: string): Promise<{
     const result = await addAdminFunction({ email });
     return result.data as any;
   } catch (error) {
-    console.error('Error adding admin role:', error);
+    console.error('Error adding admin role:', error as any);
     return {
       success: false,
       error: error.message || 'An error occurred while adding admin role'
@@ -832,7 +835,7 @@ export async function debugAdminStatus() {
       return userData.role === 'admin';
     }
   } catch (error) {
-    console.error("Error checking admin status", error);
+    console.error("Error checking admin status", error as any);
     return false;
   }
 }
@@ -1008,14 +1011,14 @@ export const getExtendedStats = async () => {
       months
     };
   } catch (error) {
-    console.error('Error getting extended stats:', error);
+    console.error('Error getting extended stats:', error as any);
 
     // If it's a permissions error, we already have a more specific error message
-    if (error.message && error.message.includes("Missing or insufficient permissions")) {
+    if ((error as any).message && (error as any).message.includes("Missing or insufficient permissions")) {
       throw error;
     }
 
     // For other errors, throw a generic error
-    throw new Error(`Failed to fetch extended statistics: ${error.message || 'Unknown error'}`);
+    throw new Error(`Failed to fetch extended statistics: ${(error as any).message || 'Unknown error'}`);
   }
 };

@@ -58,11 +58,13 @@ export interface Redemption {
 }
 
 export interface OnlineOrderCode {
+  id: string;
   code: string;
   isUsed: boolean;
   createdAt: Timestamp;
   usedAt?: Timestamp;
   userId?: string;
+  usedBy?: string;
   pointsAwarded: number;
   expiresAt: Timestamp;
 }
