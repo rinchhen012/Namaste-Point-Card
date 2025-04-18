@@ -278,7 +278,7 @@ const AdminRewards: React.FC = () => {
           className="px-4 py-2 bg-orange-500 text-white rounded hover:bg-orange-600"
           onClick={openModal}
         >
-          Add New Reward
+          Add New Coupon
         </button>
       </div>
 
